@@ -1,0 +1,28 @@
+{
+    "member": [
+        {
+            "name": "Joshua Hörtkorn",
+            "role": "Vorsitzender",
+            "joined": "2025-05-20",
+            "about_me": "Ich bin Joshua, 24 Jahre alt und studiere Maschinenbau im Master an der TUHH. Seit meiner Kindheit bin ich begeisterter VfB Stuttgart Fan und freue mich sehr, den HBBC als Vorsitzender mitgestalten zu dürfen."
+        },
+        {
+            "name": "Moritz Hinderer",
+            "role": "Stellvertretender Vorsitzender",
+            "joined": "2025-05-20",
+            "about_me": "Hallo, ich bin Moritz, 24 Jahre alt und studiere Maschinenbau im Master an der TUHH. Als leidenschaftlicher VfB Stuttgart Fan freue ich mich darauf, den HBBC als stellvertretender Vorsitzender zu unterstützen und gemeinsam mit euch spannende Fußballmomente zu erleben."
+        },
+        {
+            "name": "Paul Otto Georg Lussier",
+            "role": "Kassenwart",
+            "joined": "2025-05-20",
+            "about_me": "Moin, ich bin Paul, 24 Jahre alt und studiere Wirtschaftsingenieurwesen im Master an der TUHH. Als großer VfB Stuttgart Fan freue ich mich sehr, den HBBC als Kassenwart mitzugestalten und gemeinsam mit euch spannende Fußballmomente zu erleben."
+        },
+        {
+            "name": "Roman Güven",
+            "role": "Schriftführer",
+            "joined": "2025-05-20",
+            "about_me": "Hallo, ich bin Roman, 24 Jahre alt und studiere Maschinenbau im Master an der TUHH. Als begeisterter VfB Stuttgart Fan freue ich mich darauf, den HBBC als Schriftführer zu unterstützen und gemeinsam mit euch spannende Fußballmomente zu erleben."
+        }
+    ]
+}
