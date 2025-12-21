@@ -33,46 +33,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Right-side buttons: notifications and profile menu -->
-                <div class="flex items-center pr-2 sm:ml-6 sm:pr-0">
-                    <!-- User profile dropdown menu -->
-                    <Menu as="div" class="relative ml-3">
-                        <!-- Profile avatar button to open dropdown -->
-                        <MenuButton
-                            class="relative flex rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 transition-transform duration-200 hover:scale-110">
-                            <span class="absolute -inset-1.5"></span>
-                            <span class="sr-only">Open user menu</span>
-                            <img class="size-8 rounded-full bg-gray-800 outline -outline-offset-1 outline-white/10"
-                                src="https://api.dicebear.com/7.x/avataaars/svg?seed=Guest"
-                                alt="User avatar" />
-                        </MenuButton>
-
-                        <!-- Dropdown menu with smooth transition animation -->
-                        <transition enter-active-class="transition ease-out duration-100"
-                            enter-from-class="transform opacity-0 scale-95" enter-to-class="transform scale-100"
-                            leave-active-class="transition ease-in duration-75" leave-from-class="transform scale-100"
-                            leave-to-class="transform opacity-0 scale-95">
-                            <!-- Dropdown menu items -->
-                            <MenuItems
-                                class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-lg bg-gray-800/95 backdrop-blur-md py-1 border border-gray-700/50 shadow-lg">
-                                <MenuItem v-slot="{ active }">
-                                <a href="#"
-                                    :class="[active ? 'bg-red-500/20 text-white' : 'text-gray-300 hover:text-white', 'block px-4 py-2 text-sm transition-colors duration-150']">Your
-                                    profile</a>
-                                </MenuItem>
-                                <MenuItem v-slot="{ active }">
-                                <a href="#"
-                                    :class="[active ? 'bg-red-500/20 text-white' : 'text-gray-300 hover:text-white', 'block px-4 py-2 text-sm transition-colors duration-150']">Settings</a>
-                                </MenuItem>
-                                <MenuItem v-slot="{ active }">
-                                <a href="#"
-                                    :class="[active ? 'bg-red-500/20 text-white' : 'text-gray-300 hover:text-white', 'block px-4 py-2 text-sm transition-colors duration-150']">Sign
-                                    out</a>
-                                </MenuItem>
-                            </MenuItems>
-                        </transition>
-                    </Menu>
-                </div>
             </div>
         </div>
 
@@ -103,6 +63,7 @@ const route = useRoute()
 // Navigation menu items - links are automatically highlighted based on current route
 const navigationBase = [
     { name: 'Home', href: '/' },
+    { name: 'Mitglieder', href: '/members' },
     { name: 'Downloads', href: '/downloads' },
 ]
 

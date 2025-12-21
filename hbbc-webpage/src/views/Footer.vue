@@ -9,27 +9,39 @@
                     <p class="text-gray-400 text-sm leading-relaxed">
                         Hamburger Böblinger Banausenchor und VFB Fanclub OFC
                     </p>
+                    <div class="mb-6"></div>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Der Hamburger Böblinger Banausenchor (HBBC) ist ein
+                        offizieller Fanclub des VFB Stuttgart. Wir sind eine
+                        Gemeinschaft von begeisterten VfB-Fans, die ihre
+                        Leidenschaft für den Fußball teilen und gemeinsam die
+                        Spiele unseres Vereins verfolgen.
+                    </p>
+                    <h3 class="text-white font-bold text-lg mt-6 mb-4">Contact</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        info@hbbc-fanclub.de
+                    </p>
                 </div>
 
                 <!-- Right side sections (Quick Links and Follow Us) -->
                 <div class="flex gap-20 justify-end">
+                    <!-- Social links -->
+                    <div>
+                        <h4 class="text-white font-semibold mb-4">Konto Informationen</h4>
+                        <p class="text-gray-400 text-sm leading-relaxed mb-2">
+                        <strong>Kontoinhaber:</strong> Joshua Hörtkorn<br/>
+                        <strong>IBAN:</strong> DE57 3101 0833 9913 6255 20<br/>
+                        <strong>BIC:</strong> SCFBDE33XXX<br/>
+                        <strong>Bank:</strong> Santander<br/>
+                        </p>
+                    </div>
                     <!-- Quick links -->
                     <div>
                         <h4 class="text-white font-semibold mb-4">Quick Links</h4>
                         <ul class="space-y-2">
                             <li><a href="/" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Home</a></li>
                             <li><a href="/downloads" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Downloads</a></li>
-                            <li><a href="#" class="text-gray-400 hover:text-red-500 transition-colors text-sm">About</a></li>
-                            <li><a href="#" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Contact</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Social links -->
-                    <div>
-                        <h4 class="text-white font-semibold mb-4">Follow Us</h4>
-                        <ul class="space-y-2">
-                            <li><a href="#" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Instagram</a></li>
-                            <li><a href="#" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Discord</a></li>
+                            <li><a href="/members" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Mitglieder</a></li>
                         </ul>
                     </div>
                 </div>
