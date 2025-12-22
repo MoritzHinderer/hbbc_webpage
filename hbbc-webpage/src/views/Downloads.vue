@@ -12,7 +12,7 @@
           :key="file.name"
           :href="file.href"
           download
-          class="flex items-center justify-between bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-red-700 hover:scale-100 md:hover:scale-[1.05] transition-all duration-300"
+          class="flex items-center justify-between bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-gray-500 hover:scale-100 md:hover:scale-[1.05] transition-all duration-300"
         >
           <div>
             <h2 class="text-lg font-semibold text-white">{{ file.name }}</h2>

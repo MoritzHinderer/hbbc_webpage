@@ -5,12 +5,12 @@
       <p class="text-xl text-gray-200">
         Lerne die Mitglieder des HBBC kennen.
       </p>
-
+      
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div
           v-for="member in members"
           :key="member.name"
-          class="bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-red-700 hover:scale-100 md:hover:scale-[1.05] transition-all duration-300 flex flex-col"
+          class="bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-gray-500 hover:scale-100 md:hover:scale-[1.05] transition-all duration-300 flex flex-col"
         >
           <!-- Member Picture -->
           <div :class="['mb-4 w-full h-48 rounded-lg flex items-center justify-center', { 'bg-gray-700/50': !member.picture }]">
@@ -38,25 +38,27 @@
         <a
           href="/downloads/Antragsformular_2025.pdf"
           download
-          class="bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-red-700 hover:scale-100 md:hover:scale-[1.05] transition-all duration-300 flex flex-col items-center justify-center cursor-pointer group"
+          class="bg-gradient-to-br from-white-900/40 to-green-800/20 backdrop-blur rounded-lg p-6 border-2 border-green-500 hover:border-green-400 hover:scale-100 md:hover:scale-[1.08] transition-all duration-300 flex flex-col items-center justify-center cursor-pointer group shadow-lg hover:shadow-green-500/20"
         >
-          <div class="mb-4 w-20 h-20 rounded-lg flex items-center justify-center bg-red-500/20 group-hover:bg-red-500/30 transition-colors">
-            <svg class="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="mb-4 w-20 h-20 rounded-lg flex items-center justify-center bg-green-500/30 group-hover:bg-green-500/50 transition-all group-hover:scale-110 shadow-lg">
+            <svg class="w-12 h-12 text-green-400 group-hover:text-green-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
               <path d="M9 20h6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </div>
-          <h2 class="text-xl font-semibold text-white mb-2">Beitreten</h2>
-          <p class="text-gray-300 text-sm leading-relaxed text-center">Laden Sie das Antragsformular herunter und werden Sie Mitglied des HBBC</p>
-          <p class="text-red-500 font-medium text-sm mt-4">Formular herunterladen</p>
+          <h2 class="text-xl font-semibold text-green-300 mb-2 group-hover:text-green-200 transition-colors">Beitreten</h2>
+          <p class="text-gray-300 text-sm leading-relaxed text-center group-hover:text-white transition-colors">Laden Sie das Antragsformular herunter und werden Sie Mitglied des HBBC</p>
+          <p class="text-green-400 font-medium text-sm mt-4 group-hover:text-green-300 transition-colors">Formular herunterladen</p>
         </a>
       </div>
+      <MembersChart />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import MembersChart from '../components/MembersChart.vue'
 
 interface Member {
   name: string

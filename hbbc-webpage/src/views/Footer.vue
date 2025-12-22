@@ -17,10 +17,8 @@
                         Leidenschaft für den Fußball teilen und gemeinsam die
                         Spiele unseres Vereins verfolgen.
                     </p>
-                    <h3 class="text-white font-bold text-lg mt-6 mb-4">Contact</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">
-                        info@hbbc-fanclub.de
-                    </p>
+                    <h3 class="text-white font-bold text-lg mt-6 mb-4">Kontakt</h3>
+                    <a href="mailto:info@hbbc-fanclub.de" class="text-gray-500 hover:text-red-500 transition-colors text-sm">info@hbbc-fanclub.de</a>
                 </div>
 
                 <!-- Right side sections (Quick Links and Follow Us) -->
