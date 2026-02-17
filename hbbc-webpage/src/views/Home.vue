@@ -11,6 +11,11 @@
                 <img src="../assets/hbbc_logo.png" alt="HBBC Logo" class="block w-[300px] h-auto" />
             </div>
 
+            <!-- VFB Schal Background (scrolls with page) -->
+            <div class="absolute left-0 right-0 top-[27vh] z-10 pointer-events-none">
+                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-full h-auto opacity-40" />
+            </div>
+
             <!-- Glass fade overlay -->
             <div class="fixed top-0 left-0 right-0 z-30 pointer-events-none w-full h-[300px] backdrop-blur-[8px]"
                 style="
@@ -149,7 +154,7 @@ const handleScroll = () => {
     logoScale.value = initialScale - (initialScale - finalScale) * progress
 
     // translateY interpolation (center → top)
-    const centerY = window.innerHeight / 2 - logoBaseHeight / 2
+    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 290
     logoTranslateY.value = centerY + (finalTopOffset - centerY) * progress
 }
 
