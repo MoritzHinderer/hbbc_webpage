@@ -12,10 +12,45 @@
             </div>
 
             <!-- VFB Schal Background (scrolls with page) -->
-            <div class="absolute left-1/2 top-[50vh] z-10 pointer-events-none" :style="{
+            <div class="absolute left-1/2 top-[95vh] z-10 pointer-events-none" :style="{
                 transform: `translateX(-50%) scale(${schalScale})`
             }">
-                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-40" />
+                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
+            </div>
+
+            <!-- VFB Schal Background (scrolls with page) -->
+            <div class="absolute left-1/2 top-[70vh] z-10 pointer-events-none" :style="{
+                transform: `translateX(-50%) scale(${schalScale})`
+            }">
+                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
+            </div>
+
+            <!-- VFB Schal Background 2 (scrolls with page, tilted) -->
+            <div class="absolute left-1/2 top-[45vh] z-10 pointer-events-none" :style="{
+                transform: `translateX(-50%) scale(${schalScale}) rotate(0deg)`
+            }">
+                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
+            </div>
+
+            <!-- VFB Schal Background 2 (scrolls with page, tilted) -->
+            <div class="absolute left-1/2 top-[20vh] z-10 pointer-events-none" :style="{
+                transform: `translateX(-50%) scale(${schalScale}) rotate(0deg)`
+            }">
+                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
+            </div>
+
+            <!-- VFB Schal Background (scrolls with page) -->
+            <div class="absolute left-1/2 top-[-5vh] z-10 pointer-events-none" :style="{
+                transform: `translateX(-50%) scale(${schalScale})`
+            }">
+                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
+            </div>
+
+            <!-- VFB Schal Background (scrolls with page) -->
+            <div class="absolute left-1/2 top-[-30vh] z-10 pointer-events-none" :style="{
+                transform: `translateX(-50%) scale(${schalScale})`
+            }">
+                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
             </div>
 
             <!-- Glass fade overlay -->
@@ -157,7 +192,7 @@ const handleScroll = () => {
     logoScale.value = initialScale - (initialScale - finalScale) * progress
 
     // translateY interpolation (center → top)
-    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 370
+    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 40
     logoTranslateY.value = centerY + (finalTopOffset - centerY) * progress
 
     // schal scale: grows from 1.7 to 2.6 as you scroll
