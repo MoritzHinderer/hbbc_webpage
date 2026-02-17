@@ -12,8 +12,10 @@
             </div>
 
             <!-- VFB Schal Background (scrolls with page) -->
-            <div class="absolute left-0 right-0 top-[27vh] z-10 pointer-events-none">
-                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-full h-auto opacity-40" />
+            <div class="absolute left-1/2 top-[50vh] z-10 pointer-events-none" :style="{
+                transform: `translateX(-50%) scale(${schalScale})`
+            }">
+                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-40" />
             </div>
 
             <!-- Glass fade overlay -->
@@ -144,6 +146,7 @@ const finalTopOffset = -130
 const logoScale = ref(initialScale)
 const logoTranslateY = ref(window.innerHeight / 2 - logoBaseHeight / 2)
 const logoOpacity = ref(1)
+const schalScale = ref(1)
 
 const handleScroll = () => {
     const scrollY = window.scrollY
@@ -154,8 +157,11 @@ const handleScroll = () => {
     logoScale.value = initialScale - (initialScale - finalScale) * progress
 
     // translateY interpolation (center → top)
-    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 290
+    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 370
     logoTranslateY.value = centerY + (finalTopOffset - centerY) * progress
+
+    // schal scale: grows from 1.7 to 2.6 as you scroll
+    schalScale.value = 2.5 + (0.9 * progress)
 }
 
 onMounted(() => {
