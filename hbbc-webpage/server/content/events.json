@@ -1,0 +1,20 @@
+{
+  "events": [
+    {
+      "title": "Fanclub-Grillabend",
+      "date": "2026-09-05",
+      "type": "meetup",
+      "location": "Hamburg",
+      "id": 2
+    },
+    {
+      "id": 3,
+      "title": "HBBBBBC Jubiläum",
+      "date": "2026-07-17",
+      "type": "meetup",
+      "time": "19:43",
+      "location": "Stuttgart",
+      "description": "dsadasdasd"
+    }
+  ]
+}
