@@ -46,21 +46,39 @@
                 </div>
                 <!-- Auth controls (desktop only) -->
                 <div class="hidden sm:flex items-center gap-3">
-                    <template v-if="currentUser">
-                        <router-link to="/profile" class="text-sm text-gray-400 hover:text-white transition-colors" title="Mein Profil">
-                            Hallo, {{ currentUser.name }}
-                        </router-link>
-                        <span :class="['text-xs font-semibold px-2 py-0.5 rounded-full', currentUser.role === 'admin' ? 'bg-red-700/40 text-red-300' : 'bg-gray-700/60 text-gray-300']">
-                            {{ currentUser.role === 'admin' ? 'Admin' : 'Mitglied' }}
-                        </span>
-                        <router-link v-if="currentUser.role === 'admin'" to="/admin"
-                            class="inline-flex items-center gap-1.5 text-sm bg-red-700 hover:bg-red-600 text-white font-medium rounded-md px-3 py-1.5 shadow-sm transition-colors">
-                            <Cog6ToothIcon class="size-4" aria-hidden="true" />
-                            Admin-Bereich
-                        </router-link>
-                        <button type="button" @click="handleLogout"
-                            class="text-sm text-gray-300 hover:text-white border border-gray-600 hover:border-red-500 rounded-md px-3 py-1.5 transition-colors">Logout</button>
-                    </template>
+                    <Menu v-if="currentUser" as="div" class="relative" v-slot="{ open: menuOpen }">
+                        <MenuButton
+                            class="inline-flex items-center gap-2 text-sm text-gray-300 hover:text-white border border-gray-600 hover:border-red-500 rounded-md px-3 py-1.5 transition-colors focus:outline-2 focus:-outline-offset-1 focus:outline-red-500">
+                            <span>{{ currentUser.name }}</span>
+                            <span :class="['text-xs font-semibold px-2 py-0.5 rounded-full', currentUser.role === 'admin' ? 'bg-red-700/40 text-red-300' : 'bg-gray-700/60 text-gray-300']">
+                                {{ currentUser.role === 'admin' ? 'Admin' : 'Mitglied' }}
+                            </span>
+                            <ChevronDownIcon :class="['size-4 transition-transform', menuOpen ? 'rotate-180' : '']" aria-hidden="true" />
+                        </MenuButton>
+                        <transition enter-active-class="transition ease-out duration-100" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100"
+                            leave-active-class="transition ease-in duration-75" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+                            <MenuItems
+                                class="absolute right-0 z-50 mt-2 w-48 origin-top-right rounded-md bg-gray-900 border border-gray-700 shadow-xl focus:outline-none overflow-hidden">
+                                <MenuItem v-slot="{ active }">
+                                    <router-link to="/profile" :class="[active ? 'bg-white/10 text-white' : 'text-gray-300', 'block px-4 py-2 text-sm transition-colors']">
+                                        Mein Profil
+                                    </router-link>
+                                </MenuItem>
+                                <MenuItem v-if="currentUser.role === 'admin'" v-slot="{ active }">
+                                    <router-link to="/admin" :class="[active ? 'bg-white/10 text-white' : 'text-gray-300', 'flex items-center gap-1.5 px-4 py-2 text-sm transition-colors']">
+                                        <Cog6ToothIcon class="size-4" aria-hidden="true" />
+                                        Admin-Bereich
+                                    </router-link>
+                                </MenuItem>
+                                <MenuItem v-slot="{ active }">
+                                    <button type="button" @click="handleLogout"
+                                        :class="[active ? 'bg-white/10 text-white' : 'text-gray-300', 'block w-full text-left px-4 py-2 text-sm transition-colors']">
+                                        Logout
+                                    </button>
+                                </MenuItem>
+                            </MenuItems>
+                        </transition>
+                    </Menu>
                     <template v-else>
                         <router-link to="/login" class="text-sm text-gray-300 hover:text-white transition-colors">Anmelden</router-link>
                         <router-link to="/register"
@@ -120,9 +138,9 @@
 
 <script setup lang="ts">
 // Import UI components from Headless UI
-import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
+import { Disclosure, DisclosureButton, DisclosurePanel, Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 // Import icons from Heroicons
-import { Bars3Icon, XMarkIcon, LockClosedIcon, LockOpenIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
+import { Bars3Icon, XMarkIcon, LockClosedIcon, LockOpenIcon, Cog6ToothIcon, ChevronDownIcon } from '@heroicons/vue/24/outline'
 // Import router to detect current route
 import { useRoute, useRouter } from 'vue-router'
 import { computed } from 'vue'
