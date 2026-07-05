@@ -2,9 +2,9 @@
     <footer class="bg-gray-950 border-t border-gray-800">
         <div class="max-w-7xl mx-auto px-6 py-12">
             <!-- Footer content grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
                 <!-- Company info -->
-                <div>
+                <div class="md:col-span-2">
                     <h3 class="text-white font-bold text-lg mb-4">HBBC</h3>
                     <p class="text-gray-400 text-sm leading-relaxed">
                         Hamburger Böblinger Banausenchor und VFB Fanclub OFC
@@ -17,32 +17,23 @@
                         Leidenschaft für den Fußball teilen und gemeinsam die
                         Spiele unseres Vereins verfolgen.
                     </p>
-                    <h3 class="text-white font-bold text-lg mt-6 mb-4">Kontakt</h3>
-                    <a href="mailto:info@hbbc-fanclub.de" class="text-gray-500 hover:text-red-500 transition-colors text-sm">info@hbbc-fanclub.de</a>
                 </div>
 
-                <!-- Right side sections (Quick Links and Follow Us) -->
-                <div class="flex gap-20 justify-end">
-                    <!-- Social links -->
-                    <div>
-                        <h4 class="text-white font-semibold mb-4">Konto Informationen</h4>
-                        <p class="text-gray-400 text-sm leading-relaxed mb-2">
-                        <strong>Kontoinhaber:</strong> Joshua Hörtkorn<br/>
-                        <strong>IBAN:</strong> DE57 3101 0833 9913 6255 20<br/>
-                        <strong>BIC:</strong> SCFBDE33XXX<br/>
-                        <strong>Bank:</strong> Santander<br/>
-                        </p>
-                    </div>
-                    <!-- Quick links -->
-                    <div>
-                        <h4 class="text-white font-semibold mb-4">Quick Links</h4>
-                        <ul class="space-y-2">
-                            <li><a href="/" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Home</a></li>
-                            <li><a href="/downloads" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Downloads</a></li>
-                            <li><a href="/members" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Mitglieder</a></li>
-                        </ul>
-                    </div>
+                <!-- Quick links -->
+                <div>
+                    <h4 class="text-white font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><router-link to="/" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Home</router-link></li>
+                        <li><router-link to="/members" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Mitglieder</router-link></li>
+                        <li><router-link to="/events" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Termine</router-link></li>
+                        <li><router-link to="/gallery" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Galerie</router-link></li>
+                        <li><router-link to="/downloads" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Downloads</router-link></li>
+                        <li><router-link to="/contact" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Kontakt</router-link></li>
+                    </ul>
                 </div>
+
+                <!-- Newsletter -->
+                <NewsletterSignup />
             </div>
 
             <!-- Divider -->
@@ -66,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import NewsletterSignup from '../components/NewsletterSignup.vue'
 </script>
 
 <style scoped>
