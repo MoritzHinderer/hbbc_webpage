@@ -92,14 +92,14 @@
         <DisclosurePanel class="sm:hidden bg-gradient-to-r from-gray-900/95 to-red-950/95 backdrop-blur-md border-b border-red-500/20">
             <!-- Mobile navigation links (stacked vertically) -->
             <div class="space-y-1 px-2 pt-2 pb-3">
-                <DisclosureButton v-for="item in publicNavigation" :key="item.name" as="router-link" :to="item.href"
-                    :class="[item.current ? 'bg-red-500/20 text-white font-semibold' : 'text-gray-300 hover:bg-white/10 hover:text-white', 'block rounded-md px-3 py-2 text-base font-medium transition-all duration-200']"
+                <DisclosureButton v-for="item in publicNavigation" :key="item.name" as="button" @click="navigate(item.href)"
+                    :class="[item.current ? 'bg-red-500/20 text-white font-semibold' : 'text-gray-300 hover:bg-white/10 hover:text-white', 'block w-full text-left rounded-md px-3 py-2 text-base font-medium transition-all duration-200']"
                     :aria-current="item.current ? 'page' : undefined">{{ item.name }}</DisclosureButton>
 
                 <div class="border-t border-red-500/20 mt-1 pt-1">
                     <p class="px-3 pt-1 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-500">Mitgliederbereich</p>
-                    <DisclosureButton v-for="item in memberNavigation" :key="item.name" as="router-link" :to="item.href"
-                        :class="[item.current ? 'bg-red-500/20 text-white font-semibold' : 'text-gray-300 hover:bg-white/10 hover:text-white', 'flex items-center gap-1.5 rounded-md px-3 py-2 text-base font-medium transition-all duration-200']"
+                    <DisclosureButton v-for="item in memberNavigation" :key="item.name" as="button" @click="navigate(item.href)"
+                        :class="[item.current ? 'bg-red-500/20 text-white font-semibold' : 'text-gray-300 hover:bg-white/10 hover:text-white', 'flex items-center gap-1.5 w-full text-left rounded-md px-3 py-2 text-base font-medium transition-all duration-200']"
                         :aria-current="item.current ? 'page' : undefined">
                         <LockOpenIcon v-if="currentUser" class="size-3.5 opacity-70" aria-hidden="true" />
                         <LockClosedIcon v-else class="size-3.5 opacity-70" aria-hidden="true" />{{ item.name }}</DisclosureButton>
@@ -113,9 +113,9 @@
                                 {{ currentUser.role === 'admin' ? 'Admin' : 'Mitglied' }}
                             </span>
                         </div>
-                        <DisclosureButton as="router-link" to="/profile"
-                            class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200">Mein Profil</DisclosureButton>
-                        <DisclosureButton v-if="currentUser.role === 'admin'" as="router-link" to="/admin"
+                        <DisclosureButton as="button" @click="navigate('/profile')"
+                            class="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200">Mein Profil</DisclosureButton>
+                        <DisclosureButton v-if="currentUser.role === 'admin'" as="button" @click="navigate('/admin')"
                             class="btn-animated flex items-center gap-1.5 w-full rounded-md px-3 py-2 mb-1 text-base font-medium bg-red-700 hover:bg-red-600 text-white transition-all duration-200">
                             <Cog6ToothIcon class="size-4" aria-hidden="true" />
                             Admin-Bereich
@@ -125,10 +125,10 @@
                             @click="handleLogout">Logout</DisclosureButton>
                     </template>
                     <template v-else>
-                        <DisclosureButton as="router-link" to="/login"
-                            class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200">Anmelden</DisclosureButton>
-                        <DisclosureButton as="router-link" to="/register"
-                            class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200">Konto beantragen</DisclosureButton>
+                        <DisclosureButton as="button" @click="navigate('/login')"
+                            class="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200">Anmelden</DisclosureButton>
+                        <DisclosureButton as="button" @click="navigate('/register')"
+                            class="block w-full text-left rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200">Konto beantragen</DisclosureButton>
                     </template>
                 </div>
             </div>
@@ -153,6 +153,18 @@ const router = useRouter()
 const handleLogout = async () => {
     await logout()
     router.push('/')
+}
+
+// The mobile menu previously used <DisclosureButton as="router-link">,
+// which relies on Headless UI correctly forwarding the click through to
+// router-link's own navigation handler. That's failed to actually navigate
+// on real iOS Safari (menu opens, links are visible, tapping does nothing)
+// despite working in Chromium/touch-emulation — Headless UI's own click
+// handling (toggling the panel) and router-link's handling of the same
+// click don't reliably compose across engines. Rendering a real <button>
+// and calling router.push() ourselves removes that interaction entirely.
+const navigate = (href: string) => {
+    router.push(href)
 }
 
 // Navigation menu items - links are automatically highlighted based on current route.

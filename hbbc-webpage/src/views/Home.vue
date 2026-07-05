@@ -4,11 +4,11 @@
         <div class="relative h-screen overflow-hidden">
 
             <!-- Logo -->
-            <div class="fixed left-1/2 z-40 pointer-events-none" :style="{
+            <div ref="logoContainerRef" class="fixed left-1/2 z-40 pointer-events-none" :style="{
                 transform: `translate(-50%, ${logoTranslateY}px) scale(${logoScale})`,
                 opacity: logoOpacity
             }">
-                <img src="../assets/hbbc_logo.webp" alt="HBBC Logo" class="block w-[300px] h-auto" />
+                <img src="../assets/hbbc_logo.webp" alt="HBBC Logo" class="block w-[clamp(180px,30vw,300px)] h-auto" @load="onLogoLoad" />
             </div>
 
             <!-- VFB Schal Background (repeated, scrolls with page) -->
@@ -34,7 +34,7 @@
         <!-- Content Sections -->
         <main class="relative z-20 px-6 py-12 -mt-96">
             <div class="max-w-4xl mx-auto text-center space-y-16">
-                <h1 class="text-2xl md:text-3xl font-bold text-red-600">Willkommen beim</h1>
+                <h1 ref="heroTextRef" class="text-2xl md:text-3xl font-bold text-red-600">Willkommen beim</h1>
                 <h1 class="text-4xl md:text-5xl font-bold text-white -mt-10">Hamburger Böblinger
                     Banausenchor und VFB Fanclub OFC</h1>
                 <p class="text-xl text-red-500 -mt-10">
@@ -159,29 +159,106 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted } from 'vue'
 import StatsSection from '../components/StatsSection.vue'
 import TestimonialsCarousel from '../components/TestimonialsCarousel.vue'
 import { UserGroupIcon, FlagIcon, MapPinIcon, HeartIcon, TicketIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
 
-const logoBaseHeight = 300 // base logo height (matches w-[300px])
+// Rough approximation for the vertical-centering math below — the logo's
+// real width is responsive (clamp(180px,30vw,300px), see the template), but
+// any resulting imprecision is corrected automatically by the navbar-
+// clearance check further down, so an exact match isn't needed here.
+const logoBaseHeight = 300
 const initialScale = 2
 const finalScale = 0.8
 const finalTopOffset = -130
+const navbarClearance = 16 // minimum gap kept below the navbar at all times
 
 const logoScale = ref(initialScale)
 const logoTranslateY = ref(window.innerHeight / 2 - logoBaseHeight / 2)
 const logoOpacity = ref(1)
 const schalScale = ref(1)
-const schalOffsets = [95, 70, 45, 20, -5, -30]
+const logoContainerRef = ref<HTMLElement | null>(null)
+const heroTextRef = ref<HTMLElement | null>(null)
+const heroTextClearance = 24 // minimum gap kept above the "Willkommen beim" heading
+const logoScaleCorrectionFactor = ref(1)
 
-const handleScroll = () => {
+// Computed once — at rest (progress=0), the logo's largest and therefore
+// riskiest size — rather than every scroll frame. Both the scale and
+// translateY formulas move monotonically from this resting state toward
+// the docked one, so if the resting state doesn't overlap the heading,
+// nothing later in the scroll will either. An earlier version of this fix
+// re-derived the correction live on every scroll frame instead: since the
+// heading scrolls with the page while the logo moves via these separate
+// JS-driven formulas, that comparison was a moving target and could
+// transiently compute a near-zero ratio partway through the scroll,
+// flickering the logo's size before "popping" to its correct one.
+const computeLogoScaleCorrectionFactor = async () => {
+    logoScaleCorrectionFactor.value = 1
+
+    // Iterated rather than solved in one shot, and reusing handleScroll()
+    // itself (called with scrollY still 0 here, at mount) rather than a
+    // simplified stand-in for it — an earlier version only replicated the
+    // scale/translateY formulas, not the navbar-clearance correction that
+    // handleScroll also applies, so its measurement didn't match what
+    // actually ends up on screen and undercorrected. Re-measuring against
+    // the real thing and correcting again converges empirically. Capped at
+    // a few rounds — each one should shrink the remaining overlap towards
+    // zero, not oscillate.
+    for (let attempt = 0; attempt < 4; attempt++) {
+        await handleScroll()
+
+        if (!logoContainerRef.value || !heroTextRef.value) return
+        const logoRect = logoContainerRef.value.getBoundingClientRect()
+        const textTop = heroTextRef.value.getBoundingClientRect().top
+        const maxBottom = textTop - heroTextClearance
+        // The source logo image has ~12.5% transparent margin below the
+        // drawn crest (trimmed content is 468 of 640px tall) — the box's
+        // raw bottom edge isn't where the artwork visually ends, so using
+        // it directly overcorrects (shrinks logos that already had a
+        // visible gap, like desktop's, because of margin baked into the
+        // asset itself, not any real crowding).
+        const effectiveBottom = logoRect.bottom - logoRect.height * (80 / 640)
+        const overlap = effectiveBottom - maxBottom
+        if (logoRect.height <= 0 || overlap <= 0) break
+
+        // scale() shrinks symmetrically around the box's own center, so
+        // both edges move inward — the top drops by the same amount the
+        // bottom rises. Shrinking by (1 - 2*overlap/height), not
+        // (1 - overlap/height), is what actually lands the bottom edge
+        // exactly on maxBottom instead of leaving half the overlap.
+        const ratio = 1 - (2 * overlap) / logoRect.height
+        if (ratio <= 0) break
+        logoScaleCorrectionFactor.value *= ratio
+    }
+}
+
+// The scarf image (w-screen, fixed aspect ratio) has generous white margin
+// around its diagonal artwork band, so tiles need real overlap for the
+// artwork itself to look continuous — not just their bounding boxes. Its
+// rendered height is coupled to viewport WIDTH, but the tiling spacing
+// below is in vh (viewport HEIGHT) — on a portrait phone (tall relative to
+// its width) that mismatch means each tile is short in absolute pixels
+// while the vh gap between tiles stays desktop-sized, exposing the
+// image's own whitespace as visible gaps. Tightening the step specifically
+// for narrow/tall aspect ratios (not just "small screens" — this must not
+// affect the already-correct iPad layout) closes that gap without
+// touching the desktop-tuned numbers.
+const computeSchalOffsets = (): number[] => {
+    const aspectRatio = window.innerWidth / window.innerHeight
+    const step = aspectRatio < 0.6 ? 12 : 25
+    return [3.8, 2.8, 1.8, 0.8, -0.2, -1.2].map((multiplier) => multiplier * step)
+}
+
+const schalOffsets = ref(computeSchalOffsets())
+
+const handleScroll = async () => {
     const scrollY = window.scrollY
     const heroHeight = window.innerHeight
     const progress = Math.min(scrollY / (heroHeight * 0.5), 1)
 
     // scale interpolation
-    logoScale.value = initialScale - (initialScale - finalScale) * progress
+    logoScale.value = (initialScale - (initialScale - finalScale) * progress) * logoScaleCorrectionFactor.value
 
     // translateY interpolation (center → top)
     const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 160
@@ -189,6 +266,34 @@ const handleScroll = () => {
 
     // schal scale: grows from 1.7 to 2.6 as you scroll
     schalScale.value = 2.5 + (0.9 * progress)
+
+    // Recomputed here (not just on 'resize') so an orientation change that
+    // fires scroll/resize together still ends up with the right spacing.
+    schalOffsets.value = computeSchalOffsets()
+
+    // On short viewports (mobile/tablet, especially landscape) the formula
+    // above can push the logo's top edge above the navbar's bottom edge —
+    // it then renders behind the navbar (lower z-index) instead of below
+    // it. The translate+scale transform is composed in a way that isn't
+    // simple to invert by hand, so measure the actual rendered position
+    // and nudge it down rather than guessing at the math.
+    await nextTick()
+    const navbar = document.querySelector('nav')
+    if (navbar && logoContainerRef.value) {
+        const navbarBottom = navbar.getBoundingClientRect().bottom
+        const logoTop = logoContainerRef.value.getBoundingClientRect().top
+        // The navbar isn't fixed/sticky — past ~80px of scroll it scrolls
+        // away too, so navbarBottom goes negative and stops constraining
+        // anything. Without a floor independent of that, the docked logo
+        // at the end of the scroll (small screens especially) could keep
+        // drifting up until it was partly clipped above the viewport —
+        // this minimumTop keeps it fully visible regardless of scroll depth.
+        const minimumTop = 8
+        const minTop = Math.max(navbarBottom + navbarClearance, minimumTop)
+        if (logoTop < minTop) {
+            logoTranslateY.value += minTop - logoTop
+        }
+    }
 }
 
 let ticking = false
@@ -201,12 +306,37 @@ const onScroll = () => {
     })
 }
 
-onMounted(() => {
+// Viewport size changed (resize or orientation change) — the correction
+// factor depends on it, so recompute before the next handleScroll.
+let resizeTicking = false
+const onResize = () => {
+    if (resizeTicking) return
+    resizeTicking = true
+    requestAnimationFrame(() => {
+        computeLogoScaleCorrectionFactor().then(handleScroll)
+        resizeTicking = false
+    })
+}
+
+onMounted(async () => {
+    await computeLogoScaleCorrectionFactor()
     handleScroll() // initialize logo properly
     window.addEventListener('scroll', onScroll, { passive: true })
+    // Covers iOS Safari's collapsible toolbar changing window.innerHeight
+    // with no 'scroll' event, and orientation changes on tablets/phones.
+    window.addEventListener('resize', onResize)
 })
 
 onUnmounted(() => {
     window.removeEventListener('scroll', onScroll)
+    window.removeEventListener('resize', onResize)
 })
+
+// The very first computeLogoScaleCorrectionFactor()/handleScroll() calls
+// above can run before the logo <img> has actually finished loading, since
+// the wrapping div has no explicit height and shrink-wraps to the image —
+// its measured rect is unreliable until the image is in. Re-run once
+// loading is confirmed so the initial paint (before any scroll/resize) is
+// correct too, not just after the user's first interaction.
+const onLogoLoad = () => { computeLogoScaleCorrectionFactor().then(handleScroll) }
 </script>
