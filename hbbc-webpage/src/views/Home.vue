@@ -1,5 +1,5 @@
 <template>
-    <div class="min-h-screen" style="background: linear-gradient(to bottom, rgb(31, 41, 55) 0%, rgb(80, 7, 7) 150%);">>
+    <div class="min-h-screen" style="background: linear-gradient(to bottom, rgb(31, 41, 55) 0%, rgb(80, 7, 7) 150%);">
         <!-- Hero + Logo -->
         <div class="relative h-screen overflow-hidden">
 
@@ -8,49 +8,15 @@
                 transform: `translate(-50%, ${logoTranslateY}px) scale(${logoScale})`,
                 opacity: logoOpacity
             }">
-                <img src="../assets/hbbc_logo.png" alt="HBBC Logo" class="block w-[300px] h-auto" />
+                <img src="../assets/hbbc_logo.webp" alt="HBBC Logo" class="block w-[300px] h-auto" />
             </div>
 
-            <!-- VFB Schal Background (scrolls with page) -->
-            <div class="absolute left-1/2 top-[95vh] z-10 pointer-events-none" :style="{
+            <!-- VFB Schal Background (repeated, scrolls with page) -->
+            <div v-for="offset in schalOffsets" :key="offset" class="absolute left-1/2 z-10 pointer-events-none" :style="{
+                top: `${offset}vh`,
                 transform: `translateX(-50%) scale(${schalScale})`
             }">
-                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
-            </div>
-
-            <!-- VFB Schal Background (scrolls with page) -->
-            <div class="absolute left-1/2 top-[70vh] z-10 pointer-events-none" :style="{
-                transform: `translateX(-50%) scale(${schalScale})`
-            }">
-                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
-            </div>
-
-            <!-- VFB Schal Background 2 (scrolls with page, tilted) -->
-            <div class="absolute left-1/2 top-[45vh] z-10 pointer-events-none" :style="{
-                transform: `translateX(-50%) scale(${schalScale}) rotate(0deg)`
-            }">
-                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
-            </div>
-
-            <!-- VFB Schal Background 2 (scrolls with page, tilted) -->
-            <div class="absolute left-1/2 top-[20vh] z-10 pointer-events-none" :style="{
-                transform: `translateX(-50%) scale(${schalScale}) rotate(0deg)`
-            }">
-                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
-            </div>
-
-            <!-- VFB Schal Background (scrolls with page) -->
-            <div class="absolute left-1/2 top-[-5vh] z-10 pointer-events-none" :style="{
-                transform: `translateX(-50%) scale(${schalScale})`
-            }">
-                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
-            </div>
-
-            <!-- VFB Schal Background (scrolls with page) -->
-            <div class="absolute left-1/2 top-[-30vh] z-10 pointer-events-none" :style="{
-                transform: `translateX(-50%) scale(${schalScale})`
-            }">
-                <img src="../assets/vfb_schal.png" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
+                <img src="../assets/vfb_schal.webp" alt="VFB Schal" class="block w-screen h-auto opacity-10" />
             </div>
 
             <!-- Glass fade overlay -->
@@ -66,7 +32,7 @@
         </div>
 
         <!-- Content Sections -->
-        <main class="relative z-20 px-6 py-12">
+        <main class="relative z-20 px-6 py-12 -mt-96">
             <div class="max-w-4xl mx-auto text-center space-y-16">
                 <h1 class="text-2xl md:text-3xl font-bold text-red-600">Willkommen beim</h1>
                 <h1 class="text-4xl md:text-5xl font-bold text-white -mt-10">Hamburger Böblinger
@@ -75,7 +41,12 @@
                     Zwanzighundertvierundzwanzig
                 </p>
 
-                <section class="bg-red-900/30 rounded-lg p-8 backdrop-blur mx-auto max-w-3xl text-center border border-red-700 hover:scale-100 md:hover:scale-[1.15] transition-transform">
+                <StatsSection />
+
+                <section class="group bg-red-900/30 rounded-2xl p-8 backdrop-blur-md mx-auto max-w-3xl text-center border border-red-700/60 shadow-lg shadow-black/20 transition-all duration-300 hover:border-red-500 hover:shadow-xl hover:shadow-red-950/40 hover:-translate-y-1">
+                    <div class="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-red-500/15 text-red-400 ring-1 ring-red-500/40 transition-colors group-hover:bg-red-500/25">
+                        <UserGroupIcon class="size-7" aria-hidden="true" />
+                    </div>
                     <h2 class="text-2xl font-bold text-white mb-4">Wer sind wir?</h2>
                     <p class="text-gray-200 leading-relaxed">
                         Der HHBC ist ein offizieller Fanclub (OFC) des VfB Stuttgart.
@@ -87,7 +58,10 @@
                     </p>
                 </section>
 
-                <section class="bg-gray-800/50 rounded-lg p-8 backdrop-blur mx-auto max-w-3xl text-center border border-gray-700 hover:scale-100 md:hover:scale-[1.15] transition-transform">
+                <section class="group bg-gray-800/50 rounded-2xl p-8 backdrop-blur-md mx-auto max-w-3xl text-center border border-gray-700 shadow-lg shadow-black/20 transition-all duration-300 hover:border-gray-500 hover:shadow-xl hover:shadow-black/40 hover:-translate-y-1">
+                    <div class="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-gray-500/15 text-gray-300 ring-1 ring-gray-500/40 transition-colors group-hover:bg-gray-500/25">
+                        <FlagIcon class="size-7" aria-hidden="true" />
+                    </div>
                     <h2 class="text-2xl font-bold text-white mb-4">Was ist unser Ziel?</h2>
                     <p class="text-gray-200 leading-relaxed">
                         Mit dem HHBC möchten wir unsere gemeinsame Liebe und
@@ -101,7 +75,10 @@
                     </p>
                 </section>
 
-                <section class="bg-red-900/30 rounded-lg p-8 backdrop-blur mx-auto max-w-3xl text-center border border-red-700 hover:scale-100 md:hover:scale-[1.15] transition-transform">
+                <section class="group bg-red-900/30 rounded-2xl p-8 backdrop-blur-md mx-auto max-w-3xl text-center border border-red-700/60 shadow-lg shadow-black/20 transition-all duration-300 hover:border-red-500 hover:shadow-xl hover:shadow-red-950/40 hover:-translate-y-1">
+                    <div class="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-red-500/15 text-red-400 ring-1 ring-red-500/40 transition-colors group-hover:bg-red-500/25">
+                        <MapPinIcon class="size-7" aria-hidden="true" />
+                    </div>
                     <h2 class="text-2xl font-bold text-white mb-4">Warum Hamburg, warum Banausenchor?</h2>
                     <p class="text-gray-200 leading-relaxed">
                         Die beiden Städte liegen geographisch gesehen ein gutes Stück
@@ -119,7 +96,10 @@
                     </p>
                 </section>
 
-                <section class="bg-gray-800/50 rounded-lg p-8 backdrop-blur mx-auto max-w-3xl text-center border border-gray-700 hover:scale-100 md:hover:scale-[1.15] transition-transform">
+                <section class="group bg-gray-800/50 rounded-2xl p-8 backdrop-blur-md mx-auto max-w-3xl text-center border border-gray-700 shadow-lg shadow-black/20 transition-all duration-300 hover:border-gray-500 hover:shadow-xl hover:shadow-black/40 hover:-translate-y-1">
+                    <div class="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-gray-500/15 text-gray-300 ring-1 ring-gray-500/40 transition-colors group-hover:bg-gray-500/25">
+                        <HeartIcon class="size-7" aria-hidden="true" />
+                    </div>
                     <h2 class="text-2xl font-bold text-white mb-4">Was ist uns wichtig?</h2>
                     <p class="text-gray-200 leading-relaxed">
                         Den zentralen Bestandteil des HBBCs bildet unsere Satzung,
@@ -135,7 +115,10 @@
                     </p>
                 </section>
 
-                <section class="bg-red-900/30 rounded-lg p-8 backdrop-blur mx-auto max-w-3xl text-center border border-red-700 hover:scale-100 md:hover:scale-[1.15] transition-transform">
+                <section class="group bg-red-900/30 rounded-2xl p-8 backdrop-blur-md mx-auto max-w-3xl text-center border border-red-700/60 shadow-lg shadow-black/20 transition-all duration-300 hover:border-red-500 hover:shadow-xl hover:shadow-red-950/40 hover:-translate-y-1">
+                    <div class="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-red-500/15 text-red-400 ring-1 ring-red-500/40 transition-colors group-hover:bg-red-500/25">
+                        <TicketIcon class="size-7" aria-hidden="true" />
+                    </div>
                     <h2 class="text-2xl font-bold text-white mb-4">Wie siehts aus mit Tickets?</h2>
                     <p class="text-gray-200 leading-relaxed">
                         Als OFC haben wir die Möglichkeit für alle VfB Spiele Karten
@@ -150,7 +133,10 @@
                     </p>
                 </section>
 
-                <section class="bg-gray-800/50 rounded-lg p-8 backdrop-blur mx-auto max-w-3xl text-center border border-gray-700 hover:scale-100 md:hover:scale-[1.15] transition-transform">
+                <section class="group bg-gray-800/50 rounded-2xl p-8 backdrop-blur-md mx-auto max-w-3xl text-center border border-gray-700 shadow-lg shadow-black/20 transition-all duration-300 hover:border-gray-500 hover:shadow-xl hover:shadow-black/40 hover:-translate-y-1">
+                    <div class="mx-auto mb-5 flex size-14 items-center justify-center rounded-full bg-gray-500/15 text-gray-300 ring-1 ring-gray-500/40 transition-colors group-hover:bg-gray-500/25">
+                        <UserPlusIcon class="size-7" aria-hidden="true" />
+                    </div>
                     <h2 class="text-2xl font-bold text-white mb-4">Wie werde ich Mitglied im HBBC?</h2>
                     <p class="text-gray-200 leading-relaxed">
                         Gegenwärtig ist unser Fanclub ein Zusammenschluss von engen
@@ -165,6 +151,8 @@
                         vorstellen.
                     </p>
                 </section>
+
+                <TestimonialsCarousel />
             </div>
         </main>
     </div>
@@ -172,6 +160,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
+import StatsSection from '../components/StatsSection.vue'
+import TestimonialsCarousel from '../components/TestimonialsCarousel.vue'
+import { UserGroupIcon, FlagIcon, MapPinIcon, HeartIcon, TicketIcon, UserPlusIcon } from '@heroicons/vue/24/outline'
 
 const logoBaseHeight = 300 // base logo height (matches w-[300px])
 const initialScale = 2
@@ -182,29 +173,40 @@ const logoScale = ref(initialScale)
 const logoTranslateY = ref(window.innerHeight / 2 - logoBaseHeight / 2)
 const logoOpacity = ref(1)
 const schalScale = ref(1)
+const schalOffsets = [95, 70, 45, 20, -5, -30]
 
 const handleScroll = () => {
     const scrollY = window.scrollY
     const heroHeight = window.innerHeight
-    const progress = Math.min(scrollY / heroHeight, 1)
+    const progress = Math.min(scrollY / (heroHeight * 0.5), 1)
 
     // scale interpolation
     logoScale.value = initialScale - (initialScale - finalScale) * progress
 
     // translateY interpolation (center → top)
-    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 40
+    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 160
     logoTranslateY.value = centerY + (finalTopOffset - centerY) * progress
 
     // schal scale: grows from 1.7 to 2.6 as you scroll
     schalScale.value = 2.5 + (0.9 * progress)
 }
 
+let ticking = false
+const onScroll = () => {
+    if (ticking) return
+    ticking = true
+    requestAnimationFrame(() => {
+        handleScroll()
+        ticking = false
+    })
+}
+
 onMounted(() => {
     handleScroll() // initialize logo properly
-    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('scroll', onScroll, { passive: true })
 })
 
 onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll)
+    window.removeEventListener('scroll', onScroll)
 })
 </script>

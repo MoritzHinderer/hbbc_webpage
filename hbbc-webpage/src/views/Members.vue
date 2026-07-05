@@ -18,7 +18,9 @@
               <img
                 :src="member.picture"
                 :alt="member.name"
+                loading="lazy"
                 class="max-w-full max-h-full object-contain rounded-lg"
+                @error="handleImageError(member)"
               />
             </template>
             <svg v-else class="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,8 +38,8 @@
 
         <!-- Join Form Card -->
         <a
-          href="/downloads/Antragsformular_2025.pdf"
-          download
+          href="/api/downloads/Antragsformular_2025.pdf"
+          download="Antragsformular_2025.pdf"
           class="bg-gradient-to-br from-white-900/40 to-green-800/20 backdrop-blur rounded-lg p-6 border-2 border-green-500 hover:border-green-400 hover:scale-100 md:hover:scale-[1.08] transition-all duration-300 flex flex-col items-center justify-center cursor-pointer group shadow-lg hover:shadow-green-500/20"
         >
           <div class="mb-4 w-20 h-20 rounded-lg flex items-center justify-center bg-green-500/30 group-hover:bg-green-500/50 transition-all group-hover:scale-110 shadow-lg">
@@ -52,6 +54,7 @@
         </a>
       </div>
       <MembersChart />
+      <MembersMap :members="members" />
     </div>
   </div>
 </template>
@@ -59,14 +62,22 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import MembersChart from '../components/MembersChart.vue'
+import MembersMap from '../components/MembersMap.vue'
 
-interface Member {
+interface RawMember {
   name: string
   role: string
   joined: string
   about_me: string
-  picture?: string
+  location?: string
 }
+
+interface Member extends RawMember {
+  picture: string | null
+  pictureAttempt: number
+}
+
+const pictureExtensions = ['png', 'jpeg', 'jpg']
 
 const members = ref<Member[]>([])
 
@@ -75,43 +86,29 @@ const formatDate = (dateString: string) => {
   return date.toLocaleDateString('de-DE', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-const getMemberPicture = async (name: string) => {
-  const snakeName = name.replace(/\s+/g, '_')
-  
-  // Try to fetch with both extensions
-  for (const ext of ['png', 'jpeg', 'jpg']) {
-    const imagePath = `/member_pictures/${snakeName}.${ext}`
-    try {
-      const response = await fetch(imagePath)
-      if (response.ok && response.status === 200) {
-        // Verify it's actually an image by checking content-type
-        const contentType = response.headers.get('content-type')
-        if (contentType && contentType.startsWith('image/')) {
-          return imagePath
-        }
-      }
-    } catch (error) {
-      // Continue to next extension
-    }
-  }
-  return null // Return null if no image found
+const buildPicturePath = (name: string, attempt: number): string | null => {
+  const ext = pictureExtensions[attempt]
+  if (!ext) return null
+  return `/member_pictures/${name.replace(/\s+/g, '_')}.${ext}`
+}
+
+// Pictures are looked up by naming convention; if a file for the current
+// extension 404s, fall back to the next extension, then to the placeholder icon.
+const handleImageError = (member: Member) => {
+  member.pictureAttempt += 1
+  member.picture = buildPicturePath(member.name, member.pictureAttempt)
 }
 
 onMounted(async () => {
   try {
     const response = await fetch('/members/members.json')
-    const data = await response.json()
-    
-    members.value = await Promise.all(
-      data.member.map(async (member: any) => {
-        const pic = await getMemberPicture(member.name)
-        console.log(`Member: ${member.name}, Picture: ${pic}`)
-        return {
-          ...member,
-          picture: pic
-        }
-      })
-    )
+    const data: { member: RawMember[] } = await response.json()
+
+    members.value = data.member.map((member) => ({
+      ...member,
+      pictureAttempt: 0,
+      picture: buildPicturePath(member.name, 0),
+    }))
   } catch (error) {
     console.error('Failed to load members:', error)
   }
