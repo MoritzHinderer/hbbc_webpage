@@ -7,43 +7,58 @@
       </p>
 
       <div class="grid gap-6 text-left">
-        <a
+        <component
+          :is="isLocked(file) ? 'router-link' : 'a'"
           v-for="file in downloads"
-          :key="file.name"
-          :href="file.href"
-          download
+          :key="file.id"
+          v-bind="isLocked(file) ? { to: `/login?redirect=/downloads` } : { href: file.href, download: `${file.name}.pdf` }"
           class="flex items-center justify-between bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-gray-500 hover:scale-100 md:hover:scale-[1.05] transition-all duration-300"
         >
           <div>
-            <h2 class="text-lg font-semibold text-white">{{ file.name }}</h2>
+            <div class="flex items-center gap-2">
+              <h2 class="text-lg font-semibold text-white">{{ file.name }}</h2>
+              <span v-if="file.requiresAuth" class="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-700/40 text-red-300">
+                <LockClosedIcon v-if="isLocked(file)" class="size-3" aria-hidden="true" />
+                <LockOpenIcon v-else class="size-3" aria-hidden="true" />
+                Nur Mitglieder
+              </span>
+            </div>
             <p class="text-sm text-gray-300">{{ file.description }}</p>
           </div>
 
-          <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
           </svg>
-        </a>
+        </component>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-const downloads = [
-  {
-    name: 'About Us 2025',
-    description: 'About Us (PDF)',
-    href: '/downloads/About_us_2025.pdf',
-  },
-  {
-    name: 'Antragsformular 2025',
-    description: 'Join the club (PDF)',
-    href: '/downloads/Antragsformular_2025.pdf',
-  },
-  {
-    name: 'Satzung 2025',
-    description: 'Club Constitution (PDF)',
-    href: '/downloads/Satzung_HBBC.pdf',
+import { ref, onMounted } from 'vue'
+import { LockClosedIcon, LockOpenIcon } from '@heroicons/vue/24/outline'
+import { currentUser } from '../auth'
+
+interface Download {
+  id: number
+  name: string
+  description: string
+  href: string
+  requiresAuth: boolean
+}
+
+const downloads = ref<Download[]>([])
+
+const isLocked = (file: Download) => file.requiresAuth && !currentUser.value
+
+onMounted(async () => {
+  try {
+    const response = await fetch('/downloads/downloads.json')
+    const data: { downloads: Download[] } = await response.json()
+    downloads.value = data.downloads || []
+  } catch (error) {
+    console.error('Failed to load downloads:', error)
   }
-]
+})
 </script>
