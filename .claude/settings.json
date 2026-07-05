@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vue-tsc -b *)",
+      "Bash(npm run build)",
+      "Bash(npx tsc -p tsconfig.server.json --noEmit *)"
+    ]
+  }
+}

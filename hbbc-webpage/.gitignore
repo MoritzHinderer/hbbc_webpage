@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Backend secrets and local data
+.env
+server/data/
+
+# Personal working notes, not project docs
+TODO.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

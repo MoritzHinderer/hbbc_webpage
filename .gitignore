@@ -1,0 +1,3 @@
+# Personal/local Claude Code state — not shared project policy
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
