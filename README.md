@@ -28,7 +28,7 @@ HBBC is an interregional fanclub that brings together passionate VfB Stuttgart s
 - **Admin content management** - The `/admin` dashboard also lets admins create/edit/delete Members (with photo upload), Events, Gallery photos, and Downloads directly on the site — no more hand-editing JSON files or dropping files into folders
 - **Downloads** - Easily accessible download section for important documents (member application forms, club info)
 - **Contact/Kontakt** - Contact form that emails the club via the backend below
-- **Newsletter signup** - Footer signup form, stores subscribers server-side
+- **Newsletter** - Registered members opt in from `/profile`; admins compose a branded HTML newsletter with a WYSIWYG editor at `/admin` (Newsletter tab), send a test to themselves, then send to all subscribers, with a send history
 - **Navigation Bar** - Modern navbar with smooth animations and active route detection
 - **Mobile Friendly** - Fully responsive design for tablets and mobile devices
 - **Network Access** - Access from any device on the same network using your computer's IP
@@ -44,10 +44,11 @@ HBBC is an interregional fanclub that brings together passionate VfB Stuttgart s
 - **Heroicons** - Beautiful hand-crafted SVG icons
 - **Chart.js** - Membership growth chart
 - **Leaflet + OpenStreetMap** - Member location map (no API key required)
-- **Express + Nodemailer** - Small backend for the contact form, newsletter signup, and account system (`server/`)
-- **`node:sqlite`** - Node's built-in SQLite module for user accounts/sessions — no database server or extra dependency needed
+- **Express + Nodemailer** - Small backend for the contact form, newsletter, and account system (`server/`)
+- **`node:sqlite`** - Node's built-in SQLite module for user accounts/sessions/newsletter history — no database server or extra dependency needed
 - **`node:crypto`** - Password hashing (scrypt) and session tokens — no auth dependency needed either
 - **Multer** - Handles the photo/PDF uploads in the admin content-management API
+- **Tiptap** - WYSIWYG rich-text editor for composing newsletters (admin-only, no markdown/HTML knowledge required)
 
 ## 📋 Prerequisites
 
@@ -72,9 +73,9 @@ HBBC is an interregional fanclub that brings together passionate VfB Stuttgart s
    cp .env.example .env
    # then fill in SMTP_HOST / SMTP_USER / SMTP_PASS / CONTACT_TO_EMAIL
    ```
-   Without a configured `.env`, the contact form and newsletter signup still
-   work end-to-end in dev — submissions are just logged to the server console
-   instead of emailed.
+   Without a configured `.env`, the contact form and newsletter sending still
+   work end-to-end in dev — submissions/sends are just logged to the server
+   console instead of emailed.
 
 4. **Start the development server (frontend + backend):**
    ```bash
@@ -137,13 +138,13 @@ hbbc-webpage/
 │   │   ├── StatsSection.vue     # Animated counter stats (Home)
 │   │   ├── AnimatedCounter.vue  # Count-up-on-scroll number
 │   │   ├── TestimonialsCarousel.vue # Rotating member quotes (Home)
-│   │   ├── NewsletterSignup.vue # Newsletter signup form (Footer)
 │   │   └── admin/                # One component per Admin.vue tab
 │   │       ├── AdminRequests.vue    # Approve/reject pending account requests
 │   │       ├── AdminMembersUsers.vue # Manage users (role/status/delete) + member cards, and link them together
 │   │       ├── AdminEvents.vue      # Create/edit/delete events
 │   │       ├── AdminGallery.vue     # Upload/caption/delete gallery photos
-│   │       └── AdminDownloads.vue   # Upload/edit/delete downloadable docs
+│   │       ├── AdminDownloads.vue   # Upload/edit/delete downloadable docs
+│   │       └── AdminNewsletter.vue  # Compose (Tiptap), preview, test-send, send-to-all, history
 │   ├── views/
 │   │   ├── Home.vue             # Home page with parallax hero section
 │   │   ├── Downloads.vue        # Downloads page for documents
@@ -165,8 +166,9 @@ hbbc-webpage/
 ├── server/                      # Express backend
 │   ├── index.ts                 # App entrypoint (also serves dist/ in production)
 │   ├── db.ts                    # SQLite (node:sqlite) setup + schema
-│   ├── mailer.ts                # Nodemailer transport
-│   ├── store.ts                 # Newsletter subscriber storage (local JSON)
+│   ├── mailer.ts                # Nodemailer transport (plain text + HTML/CID)
+│   ├── newsletter-template.ts   # Branded HTML email wrapper (logo, colors, footer)
+│   ├── newsletter-migration.ts  # One-time migration of legacy JSON subscribers to users.newsletter_subscribed
 │   ├── validation.ts            # Shared input validation
 │   ├── content-store.ts         # Generic JSON-array read/write + id backfill
 │   ├── members-shared.ts        # Member type + picture helpers, shared by admin + self-service routes
@@ -177,7 +179,6 @@ hbbc-webpage/
 │   │   └── middleware.ts        # attachUser / requireAuth / requireAdmin
 │   ├── routes/
 │   │   ├── contact.ts
-│   │   ├── newsletter.ts
 │   │   ├── auth.ts              # register/login/logout/me
 │   │   ├── admin.ts             # list/approve/reject account requests
 │   │   ├── admin-users.ts       # admin: list all users, change role/status, delete
@@ -185,7 +186,8 @@ hbbc-webpage/
 │   │   ├── admin-events.ts      # admin CRUD for events.json
 │   │   ├── admin-gallery.ts     # admin CRUD for gallery.json + photos
 │   │   ├── admin-downloads.ts   # admin CRUD for downloads.json + files
-│   │   ├── profile.ts           # self-service: GET/POST/PUT/DELETE /api/profile/member (your own card)
+│   │   ├── admin-newsletter.ts  # admin: subscribers/history/send
+│   │   ├── profile.ts           # self-service: GET/POST/PUT/DELETE /api/profile/member (your own card) + PUT /api/profile/newsletter
 │   │   ├── events.ts            # GET /api/events (requires login)
 │   │   ├── gallery.ts           # GET /api/gallery + photos (requires login)
 │   │   └── downloads.ts         # GET /api/downloads/:file (per-file conditional login)
@@ -195,11 +197,14 @@ hbbc-webpage/
 │   │   ├── gallery.json
 │   │   ├── gallery-photos/
 │   │   └── downloads/           # The actual PDF files (manifest stays in public/, see below)
+│   ├── assets/
+│   │   └── hbbc-logo-email.png  # Email-safe PNG logo, embedded as a CID attachment
 │   ├── scripts/
 │   │   └── create-admin.ts      # One-off CLI to bootstrap the first admin
-│   └── data/                    # Runtime data: app.db, newsletter list (gitignored)
+│   └── data/                    # Runtime data: app.db (gitignored)
 ├── scripts/
-│   └── optimize-images.mjs      # Re-run after replacing a source image in src/assets
+│   ├── optimize-images.mjs      # Re-run after replacing a source image in src/assets
+│   └── generate-email-logo.mjs  # Re-run after replacing the logo, to regenerate server/assets/hbbc-logo-email.png
 ├── public/
 │   ├── downloads/downloads.json # Downloads manifest (public; files themselves are not)
 │   ├── member_pictures/         # Member photos (snake_case naming)
@@ -350,8 +355,8 @@ itself is still sitting at a guessable public URL.
 | `/contact` | Contact.vue | Contact form |
 | `/login` | Login.vue | Log in |
 | `/register` | Register.vue | Request an account |
-| `/profile` | Profile.vue | Manage your own member card 🔒 requires login |
-| `/admin` | Admin.vue | Manage account requests, users + member cards, events, gallery, downloads 🔒 admin only |
+| `/profile` | Profile.vue | Manage your own member card + newsletter subscription 🔒 requires login |
+| `/admin` | Admin.vue | Manage account requests, users + member cards, events, gallery, downloads, newsletter 🔒 admin only |
 | `*` | NotFound.vue | 404 page |
 
 ## 🎯 Available Scripts
@@ -366,11 +371,10 @@ itself is still sitting at a guessable public URL.
 
 ## 📧 Backend / API
 
-`server/` is a small Express app: the contact form, newsletter signup, and
+`server/` is a small Express app: the contact form, newsletter, and
 the account system. Everything else on the site is static.
 
 - `POST /api/contact` — `{ name, email, message }`, emails `CONTACT_TO_EMAIL` via Nodemailer, `replyTo` set to the sender.
-- `POST /api/newsletter` — `{ email }`, appends to `server/data/newsletter-subscribers.json` (gitignored) and notifies `CONTACT_TO_EMAIL`.
 - `POST /api/auth/register` — `{ name, email, password, message? }`, creates a `pending` account and emails `CONTACT_TO_EMAIL` so the admin knows to review it.
 - `POST /api/auth/login` — `{ email, password }`, sets an httpOnly session cookie on success. Fails with a specific message if the account is still `pending` or was `rejected`.
 - `POST /api/auth/logout`, `GET /api/auth/me` — end the session / check current login state.
@@ -381,9 +385,13 @@ the account system. Everything else on the site is static.
 - `GET/POST /api/admin/events`, `PUT/DELETE /api/admin/events/:id` — admin-only CRUD for events.
 - `GET/POST /api/admin/gallery`, `PUT/DELETE /api/admin/gallery/:file` — admin-only CRUD for gallery photos, `POST` accepts a multipart `photo` field.
 - `GET/POST /api/admin/downloads`, `PUT/DELETE /api/admin/downloads/:id` — admin-only CRUD for downloadable documents, `POST`/`PUT` accept a multipart `file` field (PDF only) and a `requiresAuth` field (the members-only checkbox).
+- `GET /api/admin/newsletter/subscribers` — admin-only, subscribed + approved users (id/name/email).
+- `GET /api/admin/newsletter/history` — admin-only, past sends (subject, recipient count, timestamp).
+- `POST /api/admin/newsletter/send` — admin-only, `{ subject, bodyHtml, testOnly? }`. Wraps `bodyHtml` (from the Tiptap editor) in the branded template and sends via Nodemailer with the club logo as a CID attachment. `testOnly: true` sends only to the calling admin's own address and isn't recorded in history; otherwise it sends to every subscribed + approved user and records one row in the `newsletters` table.
+- `PUT /api/profile/newsletter` — login-only, `{ subscribed: boolean }`; toggles the current user's own subscription.
 - `GET /api/events`, `GET /api/gallery`, `GET /api/gallery/photos/:file` — login-only; these read from `server/content/` (not `public/`), so the data is never reachable by URL without a valid session.
 - `GET /api/downloads/:file` — *not* blanket login-only like the two above; it looks up that specific file's `requiresAuth` flag in the (public) manifest and only requires a session if that flag is set. Public documents stay a one-hop download for everyone.
-- `/api/contact`, `/api/newsletter`, and `/api/auth/register` are rate-limited (5–10 requests / 15 min / IP); `/api/auth/login` gets a more generous 30 / 15 min since mistyped passwords are normal and shouldn't lock someone out.
+- `/api/contact` and `/api/auth/register` are rate-limited (5–10 requests / 15 min / IP); `/api/auth/login` gets a more generous 30 / 15 min since mistyped passwords are normal and shouldn't lock someone out.
 - SMTP credentials go in `.env` (see `.env.example`); without them, mail-sending routes still respond successfully but just log what would have been sent.
 - In dev, Vite proxies `/api/*` to `http://localhost:3001` (see `vite.config.ts`). In production, `npm start` serves the frontend and API from the same Express process.
 
@@ -417,6 +425,35 @@ tokens in an httpOnly cookie, checked against the database on every request.
 You'll see one `ExperimentalWarning: SQLite is an experimental feature...`
 line in the server log on startup — this is expected and harmless, not an
 error.
+
+## 📧 Newsletter
+
+Only registered accounts can subscribe — there's no anonymous signup. A
+logged-in user toggles it themselves from `/profile`; an admin can see who's
+subscribed in the `/admin` "Mitglieder & Nutzer" user list (a small badge per
+user) and manages everything else about the newsletter from the dedicated
+`/admin` "Newsletter" tab:
+
+- **Compose** with a WYSIWYG editor ([Tiptap](https://tiptap.dev/)) —
+  bold/italic/heading/lists/link buttons, no markdown or HTML knowledge
+  needed. A live preview shows exactly what subscribers will receive,
+  including the club's branded header (logo + colors) and footer.
+- **Test-mail** sends the current draft only to the admin's own address
+  before committing to a real send.
+- **Send to all subscribers** requires confirming the exact recipient count
+  first, then sends one-by-one (never CC/BCC) and records the send (subject,
+  recipient count, timestamp) in a history list below the composer.
+
+The club logo is embedded as a CID attachment (`server/assets/hbbc-logo-email.png`,
+regenerate with `node scripts/generate-email-logo.mjs` after replacing the
+source logo) rather than linked by URL, since most email clients can't fetch
+`localhost`-hosted images and render WebP inconsistently.
+
+If you're upgrading from before this feature existed: the old anonymous
+footer signup list (`server/data/newsletter-subscribers.json`) is migrated
+automatically on server startup — each stored email is matched against
+existing `users` rows and marked subscribed, then the file is renamed to
+`newsletter-subscribers.migrated.json` so this only happens once.
 
 ## ♿ Accessibility
 
@@ -475,6 +512,7 @@ For inquiries about HBBC, please contact through the website or email.
 - [x] Implement newsletter signup
 - [x] Add an account system (request → admin approval → login) gating Events/Gallery
 - [x] Let the admin manage members/events/gallery/downloads from the website instead of hand-editing files
+- [x] Admin newsletter composer (WYSIWYG, branded template, test-send, send history) with per-account opt-in
 - [ ] No automated tests or CI pipeline yet
 
 ## 🎓 Learning Resources

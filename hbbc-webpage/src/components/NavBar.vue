@@ -82,7 +82,7 @@
                     <template v-else>
                         <router-link to="/login" class="text-sm text-gray-300 hover:text-white transition-colors">Anmelden</router-link>
                         <router-link to="/register"
-                            class="text-sm bg-red-700 hover:bg-red-600 text-white rounded-md px-3 py-1.5 transition-colors">Konto beantragen</router-link>
+                            class="btn-animated text-sm bg-red-700 hover:bg-red-600 text-white rounded-md px-3 py-1.5 transition-colors">Konto beantragen</router-link>
                     </template>
                 </div>
             </div>
@@ -116,7 +116,7 @@
                         <DisclosureButton as="router-link" to="/profile"
                             class="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-white/10 hover:text-white transition-all duration-200">Mein Profil</DisclosureButton>
                         <DisclosureButton v-if="currentUser.role === 'admin'" as="router-link" to="/admin"
-                            class="flex items-center gap-1.5 w-full rounded-md px-3 py-2 mb-1 text-base font-medium bg-red-700 hover:bg-red-600 text-white transition-all duration-200">
+                            class="btn-animated flex items-center gap-1.5 w-full rounded-md px-3 py-2 mb-1 text-base font-medium bg-red-700 hover:bg-red-600 text-white transition-all duration-200">
                             <Cog6ToothIcon class="size-4" aria-hidden="true" />
                             Admin-Bereich
                         </DisclosureButton>

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { db } from '../db.js'
 import { readCollection, writeCollection } from '../content-store.js'
 import { memberPictureUpload } from '../uploads.js'
 import { isNonEmptyString } from '../validation.js'
@@ -102,6 +103,17 @@ router.delete('/member', async (req, res) => {
   await deleteExistingPicture(removed.name)
   await writeCollection(membersFile, 'member', members)
   res.json({ ok: true })
+})
+
+router.put('/newsletter', (req, res) => {
+  const { subscribed } = req.body ?? {}
+  if (typeof subscribed !== 'boolean') {
+    res.status(400).json({ error: 'Ungültiger Wert.' })
+    return
+  }
+
+  db.prepare('UPDATE users SET newsletter_subscribed = ? WHERE id = ?').run(subscribed ? 1 : 0, req.user!.id)
+  res.json({ ok: true, subscribed })
 })
 
 export default router

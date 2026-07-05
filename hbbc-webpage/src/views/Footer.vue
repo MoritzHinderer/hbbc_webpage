@@ -2,7 +2,7 @@
     <footer class="bg-gray-950 border-t border-gray-800">
         <div class="max-w-7xl mx-auto px-6 py-12">
             <!-- Footer content grid -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
                 <!-- Company info -->
                 <div class="md:col-span-2">
                     <h3 class="text-white font-bold text-lg mb-4">HBBC</h3>
@@ -31,9 +31,6 @@
                         <li><router-link to="/contact" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Kontakt</router-link></li>
                     </ul>
                 </div>
-
-                <!-- Newsletter -->
-                <NewsletterSignup />
             </div>
 
             <!-- Divider -->
@@ -55,10 +52,6 @@
         </div>
     </footer>
 </template>
-
-<script setup lang="ts">
-import NewsletterSignup from '../components/NewsletterSignup.vue'
-</script>
 
 <style scoped>
 </style>

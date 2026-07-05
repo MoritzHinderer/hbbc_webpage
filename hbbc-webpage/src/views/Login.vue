@@ -37,7 +37,7 @@
         <button
           type="submit"
           :disabled="status === 'sending'"
-          class="w-full bg-red-700 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium px-6 py-3 rounded-lg transition-colors"
+          class="btn-animated w-full bg-red-700 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium px-6 py-3 rounded-lg transition-colors"
         >
           {{ status === 'sending' ? 'Wird geprüft…' : 'Anmelden' }}
         </button>

@@ -6,7 +6,7 @@
       <button
         v-if="!showForm"
         type="button"
-        class="bg-red-700 hover:bg-red-600 text-white font-medium px-6 py-2.5 rounded-lg transition-colors"
+        class="btn-animated bg-red-700 hover:bg-red-600 text-white font-medium px-6 py-2.5 rounded-lg transition-colors"
         @click="startCreate"
       >
         + Dokument hinzufügen
@@ -48,7 +48,7 @@
 
       <div class="flex gap-3 pt-2">
         <button type="submit" :disabled="status === 'sending'"
-          class="bg-red-700 hover:bg-red-600 disabled:bg-gray-600 text-white font-medium px-5 py-2 rounded-lg transition-colors">
+          class="btn-animated bg-red-700 hover:bg-red-600 disabled:bg-gray-600 text-white font-medium px-5 py-2 rounded-lg transition-colors">
           {{ status === 'sending' ? 'Wird gespeichert…' : 'Speichern' }}
         </button>
         <button type="button" class="text-gray-300 hover:text-white px-5 py-2" @click="cancelForm">Abbrechen</button>

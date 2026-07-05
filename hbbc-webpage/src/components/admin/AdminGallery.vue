@@ -22,7 +22,7 @@
       </div>
 
       <button type="submit" :disabled="status === 'sending' || !file"
-        class="bg-red-700 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium px-5 py-2 rounded-lg transition-colors">
+        class="btn-animated bg-red-700 hover:bg-red-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium px-5 py-2 rounded-lg transition-colors">
         {{ status === 'sending' ? 'Wird hochgeladen…' : 'Hochladen' }}
       </button>
     </form>

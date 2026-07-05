@@ -10,14 +10,20 @@ const VALID_STATUSES = ['pending', 'approved', 'rejected']
 
 router.get('/', async (_req, res) => {
   const users = db
-    .prepare('SELECT id, name, email, role, status, created_at FROM users ORDER BY created_at DESC')
-    .all() as { id: number }[]
+    .prepare(
+      'SELECT id, name, email, role, status, created_at, newsletter_subscribed FROM users ORDER BY created_at DESC',
+    )
+    .all() as { id: number; newsletter_subscribed: number }[]
 
   const members = await readCollection<Member>(membersFile, 'member')
   const memberIdByUserId = new Map(members.filter((m) => m.user_id != null).map((m) => [m.user_id, m.id]))
 
   res.json({
-    users: users.map((user) => ({ ...user, memberCardId: memberIdByUserId.get(user.id) ?? null })),
+    users: users.map((user) => ({
+      ...user,
+      newsletter_subscribed: Boolean(user.newsletter_subscribed),
+      memberCardId: memberIdByUserId.get(user.id) ?? null,
+    })),
   })
 })
 

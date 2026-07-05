@@ -63,7 +63,7 @@
 
           <div class="flex gap-3 pt-2">
             <button type="submit" :disabled="status === 'sending'"
-              class="bg-red-700 hover:bg-red-600 disabled:bg-gray-600 text-white font-medium px-5 py-2 rounded-lg transition-colors">
+              class="btn-animated bg-red-700 hover:bg-red-600 disabled:bg-gray-600 text-white font-medium px-5 py-2 rounded-lg transition-colors">
               {{ status === 'sending' ? 'Wird gespeichert…' : (member ? 'Speichern' : 'Karte erstellen') }}
             </button>
             <button v-if="member" type="button" class="text-red-400 hover:text-red-300 px-5 py-2" @click="handleDelete">
@@ -71,6 +71,22 @@
             </button>
           </div>
         </form>
+
+        <div class="bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-gray-500 flex items-center justify-between gap-4">
+          <div>
+            <h3 class="text-white font-semibold">Newsletter</h3>
+            <p class="text-gray-400 text-sm">Erhalte Neuigkeiten und Ankündigungen des HBBC per E-Mail.</p>
+          </div>
+          <button
+            type="button"
+            :disabled="newsletterStatus === 'sending'"
+            class="btn-animated shrink-0 font-medium px-4 py-2 rounded-lg transition-colors disabled:opacity-60"
+            :class="currentUser?.newsletterSubscribed ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-red-700 hover:bg-red-600 text-white'"
+            @click="toggleNewsletter"
+          >
+            {{ currentUser?.newsletterSubscribed ? 'Abbestellen' : 'Abonnieren' }}
+          </button>
+        </div>
       </template>
     </div>
   </div>
@@ -78,6 +94,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
+import { currentUser } from '../auth'
 
 interface Member {
   id: number
@@ -173,6 +190,32 @@ const handleDelete = async () => {
     successMessage.value = 'Karte gelöscht.'
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'Etwas ist schiefgelaufen.'
+  }
+}
+
+const newsletterStatus = ref<'idle' | 'sending'>('idle')
+
+const toggleNewsletter = async () => {
+  if (!currentUser.value) return
+  newsletterStatus.value = 'sending'
+  errorMessage.value = ''
+  successMessage.value = ''
+  const nextSubscribed = !currentUser.value.newsletterSubscribed
+  try {
+    const response = await fetch('/api/profile/newsletter', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ subscribed: nextSubscribed }),
+    })
+    const data = await response.json().catch(() => null)
+    if (!response.ok) throw new Error(data?.error || 'Speichern fehlgeschlagen.')
+    currentUser.value = { ...currentUser.value, newsletterSubscribed: nextSubscribed }
+    successMessage.value = nextSubscribed ? 'Newsletter abonniert.' : 'Newsletter abbestellt.'
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : 'Etwas ist schiefgelaufen.'
+  } finally {
+    newsletterStatus.value = 'idle'
   }
 }
 

@@ -29,6 +29,25 @@ db.exec(`
   )
 `)
 
+// users predates this column — ALTER TABLE ... ADD COLUMN fails if it
+// already exists, so this is a guarded one-time migration, safe to run on
+// every startup.
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN newsletter_subscribed INTEGER NOT NULL DEFAULT 0`)
+} catch {
+  // column already present
+}
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS newsletters (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subject TEXT NOT NULL,
+    body_html TEXT NOT NULL,
+    recipient_count INTEGER NOT NULL,
+    sent_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )
+`)
+
 export type Role = 'member' | 'admin'
 export type AccountStatus = 'pending' | 'approved' | 'rejected'
 
@@ -41,6 +60,7 @@ export interface UserRow {
   status: AccountStatus
   message: string | null
   created_at: string
+  newsletter_subscribed: number
 }
 
 // Never send password_hash to the client — this is what request handlers
@@ -52,6 +72,7 @@ export interface PublicUser {
   role: Role
   status: AccountStatus
   created_at: string
+  newsletterSubscribed: boolean
 }
 
 export function toPublicUser(row: UserRow): PublicUser {
@@ -62,5 +83,6 @@ export function toPublicUser(row: UserRow): PublicUser {
     role: row.role,
     status: row.status,
     created_at: row.created_at,
+    newsletterSubscribed: Boolean(row.newsletter_subscribed),
   }
 }

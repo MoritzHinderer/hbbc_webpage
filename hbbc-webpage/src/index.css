@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+@layer components {
+  /* Reusable "nice" interaction treatment for primary action buttons/links:
+     a subtle hover lift, a tactile press-down on click, and a light sweep
+     across the surface on hover. Applied wherever a bg-red-700 CTA button
+     already exists — this only adds motion, no color/layout changes. */
+  .btn-animated {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .btn-animated:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+  .btn-animated:not(:disabled):active {
+    transform: translateY(0) scale(0.96);
+  }
+  .btn-animated::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -75%;
+    width: 50%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+    pointer-events: none;
+  }
+  .btn-animated:not(:disabled):hover::after {
+    left: 125%;
+  }
+}

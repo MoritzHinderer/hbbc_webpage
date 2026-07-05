@@ -4,7 +4,6 @@ import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import path from 'node:path'
 import contactRouter from './routes/contact.js'
-import newsletterRouter from './routes/newsletter.js'
 import authRouter from './routes/auth.js'
 import adminRouter from './routes/admin.js'
 import adminMembersRouter from './routes/admin-members.js'
@@ -12,11 +11,13 @@ import adminEventsRouter from './routes/admin-events.js'
 import adminGalleryRouter from './routes/admin-gallery.js'
 import adminDownloadsRouter from './routes/admin-downloads.js'
 import adminUsersRouter from './routes/admin-users.js'
+import adminNewsletterRouter from './routes/admin-newsletter.js'
 import eventsRouter from './routes/events.js'
 import galleryRouter from './routes/gallery.js'
 import downloadsRouter from './routes/downloads.js'
 import profileRouter from './routes/profile.js'
 import { attachUser, requireAdmin, requireAuth } from './auth/middleware.js'
+import { migrateLegacyNewsletterSubscribers } from './newsletter-migration.js'
 
 const app = express()
 const port = Number(process.env.PORT) || 3001
@@ -35,7 +36,6 @@ const formLimiter = rateLimit({
 })
 
 app.use('/api/contact', formLimiter, contactRouter)
-app.use('/api/newsletter', formLimiter, newsletterRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/admin', requireAdmin, adminRouter)
 app.use('/api/admin/members', requireAdmin, adminMembersRouter)
@@ -43,6 +43,7 @@ app.use('/api/admin/events', requireAdmin, adminEventsRouter)
 app.use('/api/admin/gallery', requireAdmin, adminGalleryRouter)
 app.use('/api/admin/downloads', requireAdmin, adminDownloadsRouter)
 app.use('/api/admin/users', requireAdmin, adminUsersRouter)
+app.use('/api/admin/newsletter', requireAdmin, adminNewsletterRouter)
 app.use('/api/profile', requireAuth, profileRouter)
 app.use('/api/events', requireAuth, eventsRouter)
 app.use('/api/gallery', requireAuth, galleryRouter)
@@ -60,6 +61,8 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(distDir, 'index.html'))
   })
 }
+
+await migrateLegacyNewsletterSubscribers()
 
 app.listen(port, () => {
   console.log(`[server] listening on http://localhost:${port}`)

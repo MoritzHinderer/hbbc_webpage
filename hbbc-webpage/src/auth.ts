@@ -7,6 +7,7 @@ export interface CurrentUser {
   role: 'member' | 'admin'
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
+  newsletterSubscribed: boolean
 }
 
 export const currentUser = ref<CurrentUser | null>(null)

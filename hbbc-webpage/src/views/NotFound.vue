@@ -8,7 +8,7 @@
       </p>
       <router-link
         to="/"
-        class="inline-block bg-red-700 hover:bg-red-600 text-white font-medium px-6 py-3 rounded-lg transition-colors"
+        class="btn-animated inline-block bg-red-700 hover:bg-red-600 text-white font-medium px-6 py-3 rounded-lg transition-colors"
       >
         Zurück zur Startseite
       </router-link>

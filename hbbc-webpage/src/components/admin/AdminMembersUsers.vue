@@ -13,6 +13,12 @@
               <div class="flex items-center gap-2">
                 <h3 class="text-white font-semibold">{{ user.name }}</h3>
                 <span v-if="user.id === currentUser?.id" class="text-xs text-gray-500">(Du)</span>
+                <span
+                  class="text-xs font-medium px-2 py-0.5 rounded-full"
+                  :class="user.newsletter_subscribed ? 'bg-green-700/40 text-green-300' : 'bg-gray-700/40 text-gray-400'"
+                >
+                  {{ user.newsletter_subscribed ? 'Newsletter abonniert' : 'Kein Newsletter' }}
+                </span>
               </div>
               <p class="text-gray-400 text-sm">{{ user.email }}</p>
               <p class="text-gray-500 text-xs mt-1">Registriert am {{ formatDate(user.created_at) }}</p>
@@ -115,7 +121,7 @@
 
       <div class="flex gap-3 pt-2">
         <button type="submit" :disabled="status === 'sending'"
-          class="bg-red-700 hover:bg-red-600 disabled:bg-gray-600 text-white font-medium px-5 py-2 rounded-lg transition-colors">
+          class="btn-animated bg-red-700 hover:bg-red-600 disabled:bg-gray-600 text-white font-medium px-5 py-2 rounded-lg transition-colors">
           {{ status === 'sending' ? 'Wird gespeichert…' : 'Speichern' }}
         </button>
         <button type="button" class="text-gray-300 hover:text-white px-5 py-2" @click="cancelMemberForm">Abbrechen</button>
@@ -127,7 +133,7 @@
       <h2 class="text-xl font-bold text-white">Mitgliederkarten ohne Nutzerkonto</h2>
 
       <div class="flex justify-center">
-        <button v-if="!showMemberForm" type="button" class="bg-red-700 hover:bg-red-600 text-white font-medium px-6 py-2.5 rounded-lg transition-colors" @click="startCreateStandalone">
+        <button v-if="!showMemberForm" type="button" class="btn-animated bg-red-700 hover:bg-red-600 text-white font-medium px-6 py-2.5 rounded-lg transition-colors" @click="startCreateStandalone">
           + Mitglied hinzufügen
         </button>
       </div>
@@ -176,6 +182,7 @@ interface User {
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   memberCardId: number | null
+  newsletter_subscribed: boolean
 }
 
 interface Member {
