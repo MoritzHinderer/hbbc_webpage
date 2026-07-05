@@ -3,7 +3,8 @@ import rateLimit from 'express-rate-limit'
 import { db, toPublicUser, type UserRow } from '../db.js'
 import { hashPassword, verifyPassword } from '../auth/password.js'
 import { clearSessionCookie, createSession, destroySession, readSessionToken, setSessionCookie } from '../auth/session.js'
-import { sendMail } from '../mailer.js'
+import { sendHtmlMail } from '../mailer.js'
+import { escapeHtml, renderBrandedEmail } from '../newsletter-template.js'
 import { isNonEmptyString, isValidEmail, isValidPassword } from '../validation.js'
 
 const router = Router()
@@ -53,9 +54,17 @@ router.post('/register', registerLimiter, async (req, res) => {
   ).run(name, email.toLowerCase(), hashPassword(password), message || null)
 
   try {
-    await sendMail({
+    const bodyHtml = `<p>${escapeHtml(name)} (${escapeHtml(email)}) hat ein Konto beantragt.</p><p><strong>Nachricht:</strong> ${message ? escapeHtml(message) : '(keine)'}</p><p>Bitte im Adminbereich (/admin) prüfen.</p>`
+    const { html, attachments } = renderBrandedEmail(
+      `Neue Kontoanfrage von ${name}`,
+      bodyHtml,
+      'Diese Benachrichtigung wurde automatisch von der HBBC-Webseite gesendet.',
+    )
+    await sendHtmlMail({
+      to: process.env.CONTACT_TO_EMAIL!,
       subject: `Neue Kontoanfrage von ${name}`,
-      text: `${name} (${email}) hat ein Konto beantragt.\n\nNachricht: ${message || '(keine)'}\n\nBitte im Adminbereich (/admin) prüfen.`,
+      html,
+      attachments,
     })
   } catch (error) {
     console.error('[auth] failed to send registration notification:', error)

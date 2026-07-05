@@ -6,7 +6,6 @@ import { membersFile, type Member } from '../members-shared.js'
 const router = Router()
 
 const VALID_ROLES = ['member', 'admin']
-const VALID_STATUSES = ['pending', 'approved', 'rejected']
 
 router.get('/', async (_req, res) => {
   const users = db
@@ -34,24 +33,23 @@ router.put('/:id', (req, res) => {
     return
   }
 
-  // An admin editing their own role/status here could lock themselves out
-  // with no easy way back in (short of the create-admin CLI) — block it.
+  // An admin editing their own role here could lock themselves out with no
+  // easy way back in (short of the create-admin CLI) — block it.
   if (req.user?.id === id) {
     res.status(400).json({ error: 'Du kannst dein eigenes Konto hier nicht bearbeiten.' })
     return
   }
 
-  const { role, status } = req.body ?? {}
+  // Status isn't editable through this route — it's set by /requests/:id/approve|reject
+  // (pending → approved/rejected) and is otherwise final; removing the account
+  // entirely (DELETE below) is the only way to undo an approval.
+  const { role } = req.body ?? {}
   if (!VALID_ROLES.includes(role)) {
     res.status(400).json({ error: 'Ungültige Rolle.' })
     return
   }
-  if (!VALID_STATUSES.includes(status)) {
-    res.status(400).json({ error: 'Ungültiger Status.' })
-    return
-  }
 
-  const result = db.prepare('UPDATE users SET role = ?, status = ? WHERE id = ?').run(role, status, id)
+  const result = db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, id)
   if (result.changes === 0) {
     res.status(404).json({ error: 'Nutzer nicht gefunden.' })
     return

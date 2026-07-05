@@ -13,6 +13,9 @@
               <div class="flex items-center gap-2">
                 <h3 class="text-white font-semibold">{{ user.name }}</h3>
                 <span v-if="user.id === currentUser?.id" class="text-xs text-gray-500">(Du)</span>
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full" :class="statusBadgeClass(user.status)">
+                  {{ statusLabel(user.status) }}
+                </span>
                 <span
                   class="text-xs font-medium px-2 py-0.5 rounded-full"
                   :class="user.newsletter_subscribed ? 'bg-green-700/40 text-green-300' : 'bg-gray-700/40 text-gray-400'"
@@ -32,11 +35,6 @@
               <select v-model="edits[user.id]!.role" class="rounded-md bg-gray-900/60 border border-gray-600 px-2 py-1.5 text-sm text-white focus:outline-none focus:border-red-500">
                 <option value="member">Mitglied</option>
                 <option value="admin">Admin</option>
-              </select>
-              <select v-model="edits[user.id]!.status" class="rounded-md bg-gray-900/60 border border-gray-600 px-2 py-1.5 text-sm text-white focus:outline-none focus:border-red-500">
-                <option value="pending">Ausstehend</option>
-                <option value="approved">Freigeschaltet</option>
-                <option value="rejected">Abgelehnt</option>
               </select>
               <button class="text-sm text-green-400 hover:text-green-300 border border-green-700 hover:border-green-500 rounded-md px-3 py-1.5 transition-colors" @click="saveUser(user.id)">Speichern</button>
               <button class="text-sm text-red-400 hover:text-red-300 border border-red-700 hover:border-red-500 rounded-md px-3 py-1.5 transition-colors" @click="handleDeleteUser(user.id)">Löschen</button>
@@ -198,7 +196,20 @@ interface Member {
 
 const users = ref<User[]>([])
 const members = ref<Member[]>([])
-const edits = reactive<Record<number, { role: string; status: string }>>({})
+const edits = reactive<Record<number, { role: string }>>({})
+
+const STATUS_LABELS: Record<User['status'], string> = {
+  pending: 'Ausstehend',
+  approved: 'Freigeschaltet',
+  rejected: 'Abgelehnt',
+}
+const STATUS_BADGE_CLASSES: Record<User['status'], string> = {
+  pending: 'bg-yellow-700/40 text-yellow-300',
+  approved: 'bg-green-700/40 text-green-300',
+  rejected: 'bg-red-700/40 text-red-300',
+}
+const statusLabel = (status: User['status']) => STATUS_LABELS[status]
+const statusBadgeClass = (status: User['status']) => STATUS_BADGE_CLASSES[status]
 const linkSelections = reactive<Record<number, string>>({})
 const errorMessage = ref('')
 
@@ -235,7 +246,7 @@ const loadAll = async () => {
     members.value = membersData.members
 
     for (const user of usersData.users as User[]) {
-      edits[user.id] = { role: user.role, status: user.status }
+      edits[user.id] = { role: user.role }
     }
     for (const member of membersData.members as Member[]) {
       if (linkSelections[member.id] === undefined) linkSelections[member.id] = ''

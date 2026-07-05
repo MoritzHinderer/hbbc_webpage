@@ -23,40 +23,17 @@ const transporter = mailerConfigured
     })
   : null
 
-export interface MailMessage {
-  subject: string
-  text: string
-  replyTo?: string
-}
-
-export async function sendMail(message: MailMessage): Promise<void> {
-  const to = process.env.CONTACT_TO_EMAIL
-  const from = process.env.CONTACT_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@hbbc-fanclub.de'
-
-  if (!transporter || !to) {
-    console.log('[mailer] (dev fallback, no SMTP configured) would send:', { to, from, ...message })
-    return
-  }
-
-  await transporter.sendMail({
-    to,
-    from,
-    replyTo: message.replyTo,
-    subject: message.subject,
-    text: message.text,
-  })
-}
-
 export interface HtmlMailMessage {
   to: string
   subject: string
   html: string
   attachments?: { filename: string; path: string; cid: string }[]
+  replyTo?: string
 }
 
-// Sibling to sendMail — used for the newsletter (arbitrary recipient, HTML
-// body, an embedded logo). Kept separate so the simple contact/notification
-// callers above are untouched.
+// Used for every email the backend sends (newsletter, contact form,
+// account notifications) — all of them go through the branded HTML
+// template now (see newsletter-template.ts).
 export async function sendHtmlMail(message: HtmlMailMessage): Promise<void> {
   const from = process.env.CONTACT_FROM_EMAIL || process.env.SMTP_USER || 'no-reply@hbbc-fanclub.de'
 
@@ -72,6 +49,7 @@ export async function sendHtmlMail(message: HtmlMailMessage): Promise<void> {
   await transporter.sendMail({
     to: message.to,
     from,
+    replyTo: message.replyTo,
     subject: message.subject,
     html: message.html,
     attachments: message.attachments,

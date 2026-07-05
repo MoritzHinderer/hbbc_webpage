@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { db, type UserRow } from '../db.js'
-import { sendMail } from '../mailer.js'
+import { sendHtmlMail } from '../mailer.js'
+import { escapeHtml, renderBrandedEmail } from '../newsletter-template.js'
 
 const router = Router()
 
@@ -34,9 +35,17 @@ router.post('/requests/:id/approve', async (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined
   if (user) {
     try {
-      await sendMail({
+      const bodyHtml = `<p>Hallo ${escapeHtml(user.name)},</p><p>dein Konto wurde freigeschaltet. Du kannst dich jetzt einloggen und die Mitgliederbereiche (Termine, Galerie) nutzen.</p>`
+      const { html, attachments } = renderBrandedEmail(
+        'Dein HBBC-Konto wurde freigeschaltet',
+        bodyHtml,
+        'Diese Nachricht wurde automatisch von der HBBC-Webseite gesendet.',
+      )
+      await sendHtmlMail({
+        to: process.env.CONTACT_TO_EMAIL!,
         subject: 'Dein HBBC-Konto wurde freigeschaltet',
-        text: `Hallo ${user.name},\n\ndein Konto wurde freigeschaltet. Du kannst dich jetzt einloggen und die Mitgliederbereiche (Termine, Galerie) nutzen.`,
+        html,
+        attachments,
         replyTo: user.email,
       })
     } catch (error) {
