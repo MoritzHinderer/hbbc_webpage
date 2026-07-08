@@ -6,6 +6,42 @@
         <p class="text-xl text-gray-200">Anstehende VfB-Spiele und Fanclub-Treffen.</p>
       </div>
 
+      <div class="text-left space-y-4">
+        <h2 class="text-2xl font-bold text-white">Alle VfB-Spiele</h2>
+        <div v-if="vfbMatches.length" class="grid gap-3">
+          <div
+            v-for="match in vfbMatches"
+            :key="match.id"
+            class="bg-gray-800/50 backdrop-blur rounded-lg p-4 border border-gray-500 flex flex-wrap items-center justify-between gap-3"
+          >
+            <div class="flex items-center gap-3">
+              <img v-if="match.opponentIcon" :src="match.opponentIcon" alt="" class="w-8 h-8 object-contain" />
+              <div>
+                <p class="text-white font-medium">
+                  {{ match.isHome ? 'VfB Stuttgart' : match.opponent }}
+                  <span class="text-gray-500">vs</span>
+                  {{ match.isHome ? match.opponent : 'VfB Stuttgart' }}
+                </p>
+                <p class="text-sm text-gray-400">{{ formatKickoff(match.kickoff) }} · {{ match.competition }}</p>
+              </div>
+            </div>
+            <span
+              v-if="match.score"
+              :class="[
+                'text-sm font-semibold px-3 py-1 rounded-full',
+                match.status === 'live' ? 'bg-red-700/40 text-red-300' : 'bg-gray-700/60 text-gray-200',
+              ]"
+            >
+              {{ match.score.home }}:{{ match.score.away }}
+              <span v-if="match.status === 'live'">· live</span>
+            </span>
+          </div>
+        </div>
+        <div v-else class="bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-gray-500 text-gray-400 text-sm">
+          Aktuell konnten keine VfB-Spieldaten geladen werden.
+        </div>
+      </div>
+
       <div v-if="upcoming.length" class="grid gap-6 text-left">
         <div
           v-for="event in upcoming"
@@ -72,7 +108,19 @@ interface ClubEvent {
   description?: string
 }
 
+interface VfbMatch {
+  id: number
+  kickoff: string
+  competition: string
+  opponent: string
+  opponentIcon: string | null
+  isHome: boolean
+  status: 'upcoming' | 'live' | 'finished'
+  score: { home: number; away: number } | null
+}
+
 const events = ref<ClubEvent[]>([])
+const vfbMatches = ref<VfbMatch[]>([])
 
 const eventTimestamp = (event: ClubEvent) => new Date(`${event.date}T${event.time || '00:00'}`).getTime()
 
@@ -87,6 +135,13 @@ const past = computed(() =>
     .filter((event) => eventTimestamp(event) < Date.now())
     .sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
 )
+
+const formatKickoff = (kickoffIso: string) => {
+  const date = new Date(kickoffIso)
+  const datePart = date.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'long' })
+  const timePart = date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+  return `${datePart}, ${timePart} Uhr`
+}
 
 const formatDateTime = (event: ClubEvent) => {
   const date = new Date(`${event.date}T${event.time || '00:00'}`)
@@ -138,6 +193,17 @@ onMounted(async () => {
     events.value = data.events || []
   } catch (error) {
     console.error('Failed to load events:', error)
+  }
+
+  // Best-effort — the manually-curated Termine above still work even if
+  // this (external-API-backed) section fails to load.
+  try {
+    const response = await fetch('/api/vfb-matches', { credentials: 'include' })
+    if (!response.ok) throw new Error(`request failed with ${response.status}`)
+    const data: { matches: VfbMatch[] } = await response.json()
+    vfbMatches.value = data.matches || []
+  } catch (error) {
+    console.error('Failed to load VfB matches:', error)
   }
 })
 </script>

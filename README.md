@@ -22,7 +22,7 @@ HBBC is an interregional fanclub that brings together passionate VfB Stuttgart s
 - **Modern Responsive Design** - Beautiful UI with gradient backgrounds and glass morphism effects
 - **Home Page** - Parallax scrolling hero section, animated member/founding-year stats, and a testimonials carousel drawn from member bios
 - **Members Page** - Display all club members with their photos, roles, and joining dates, a membership-growth chart, and a map of where members are based. Includes a call-to-action card to join the club
-- **Events/Termine** 🔒 - Upcoming VfB matches and fanclub meetups, with .ics calendar export (members only)
+- **Events/Termine** 🔒 - Fanclub meetups (admin-managed, with .ics calendar export) plus VfB Stuttgart's full official match schedule for the season, auto-fetched with live/final scores (members only)
 - **Gallery/Galerie** 🔒 - Photo gallery with a lightbox viewer (members only)
 - **Accounts & Admin approval** - Visitors can request an account; a club admin approves/rejects requests in an in-site dashboard (`/admin`) before Events/Gallery become accessible
 - **Admin content management** - The `/admin` dashboard also lets admins create/edit/delete Members (with photo upload), Events, Gallery photos, and Downloads directly on the site — no more hand-editing JSON files or dropping files into folders
@@ -44,6 +44,7 @@ HBBC is an interregional fanclub that brings together passionate VfB Stuttgart s
 - **Heroicons** - Beautiful hand-crafted SVG icons
 - **Chart.js** - Membership growth chart
 - **Leaflet + OpenStreetMap** - Member location map (no API key required)
+- **OpenLigaDB** - Free, keyless public API for VfB Stuttgart's match schedule + live/final scores on the Termine page
 - **Express + Nodemailer** - Small backend for the contact form, newsletter, and account system (`server/`)
 - **`node:sqlite`** - Node's built-in SQLite module for user accounts/sessions/newsletter history — no database server or extra dependency needed
 - **`node:crypto`** - Password hashing (scrypt) and session tokens — no auth dependency needed either
@@ -189,6 +190,7 @@ hbbc-webpage/
 │   │   ├── admin-newsletter.ts  # admin: subscribers/history/send
 │   │   ├── profile.ts           # self-service: GET/POST/PUT/DELETE /api/profile/member (your own card) + PUT /api/profile/newsletter
 │   │   ├── events.ts            # GET /api/events (requires login)
+│   │   ├── vfb-matches.ts       # GET /api/vfb-matches — VfB Stuttgart's season fixtures + scores via OpenLigaDB (requires login)
 │   │   ├── gallery.ts           # GET /api/gallery + photos (requires login)
 │   │   └── downloads.ts         # GET /api/downloads/:file (per-file conditional login)
 │   ├── content/                 # Events/gallery/downloads data — NOT in public/,
@@ -303,6 +305,18 @@ Events are defined in `server/content/events.json`:
 collapsed list; upcoming events show prominently with an "add to calendar" (.ics) button.
 Like members, `id` is backfilled automatically if missing.
 
+**VfB Stuttgart's full match schedule** shows separately, above the
+admin-curated Termine list, and needs no manual entry at all: `GET /api/vfb-matches`
+fetches it from [OpenLigaDB](https://www.openligadb.de/) (a free, keyless public
+API for German football) and returns every remaining league match for the
+season with a computed `status` (`upcoming` / `live` / `finished`, based on
+kickoff time) and current `score` where available. Both top divisions
+(`bl1`/`bl2`) are checked so this keeps working across relegation/promotion
+without a code change. Responses are cached in memory for 10 minutes to
+avoid hitting the external API on every page load; if OpenLigaDB is
+unreachable, the route degrades to an empty list rather than breaking the
+rest of the Termine page.
+
 ## 🖼️ Gallery Data Structure
 
 Manage the gallery at `/admin` (Galerie tab) — upload a photo with an
@@ -390,6 +404,7 @@ the account system. Everything else on the site is static.
 - `POST /api/admin/newsletter/send` — admin-only, `{ subject, bodyHtml, testOnly? }`. Wraps `bodyHtml` (from the Tiptap editor) in the branded template and sends via Nodemailer with the club logo as a CID attachment. `testOnly: true` sends only to the calling admin's own address and isn't recorded in history; otherwise it sends to every subscribed + approved user and records one row in the `newsletters` table.
 - `PUT /api/profile/newsletter` — login-only, `{ subscribed: boolean }`; toggles the current user's own subscription.
 - `GET /api/events`, `GET /api/gallery`, `GET /api/gallery/photos/:file` — login-only; these read from `server/content/` (not `public/`), so the data is never reachable by URL without a valid session.
+- `GET /api/vfb-matches` — login-only; VfB Stuttgart's season fixtures + scores, proxied from OpenLigaDB and cached in memory for 10 minutes.
 - `GET /api/downloads/:file` — *not* blanket login-only like the two above; it looks up that specific file's `requiresAuth` flag in the (public) manifest and only requires a session if that flag is set. Public documents stay a one-hop download for everyone.
 - `/api/contact` and `/api/auth/register` are rate-limited (5–10 requests / 15 min / IP); `/api/auth/login` gets a more generous 30 / 15 min since mistyped passwords are normal and shouldn't lock someone out.
 - SMTP credentials go in `.env` (see `.env.example`); without them, mail-sending routes still respond successfully but just log what would have been sent.
@@ -513,6 +528,7 @@ For inquiries about HBBC, please contact through the website or email.
 - [x] Add an account system (request → admin approval → login) gating Events/Gallery
 - [x] Let the admin manage members/events/gallery/downloads from the website instead of hand-editing files
 - [x] Admin newsletter composer (WYSIWYG, branded template, test-send, send history) with per-account opt-in
+- [x] Auto-fetch VfB Stuttgart's full match schedule with live/final scores (OpenLigaDB) on the Termine page
 - [ ] No automated tests or CI pipeline yet
 
 ## 🎓 Learning Resources

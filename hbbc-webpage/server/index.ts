@@ -13,6 +13,7 @@ import adminDownloadsRouter from './routes/admin-downloads.js'
 import adminUsersRouter from './routes/admin-users.js'
 import adminNewsletterRouter from './routes/admin-newsletter.js'
 import eventsRouter from './routes/events.js'
+import vfbMatchesRouter from './routes/vfb-matches.js'
 import galleryRouter from './routes/gallery.js'
 import downloadsRouter from './routes/downloads.js'
 import profileRouter from './routes/profile.js'
@@ -46,6 +47,7 @@ app.use('/api/admin/users', requireAdmin, adminUsersRouter)
 app.use('/api/admin/newsletter', requireAdmin, adminNewsletterRouter)
 app.use('/api/profile', requireAuth, profileRouter)
 app.use('/api/events', requireAuth, eventsRouter)
+app.use('/api/vfb-matches', requireAuth, vfbMatchesRouter)
 app.use('/api/gallery', requireAuth, galleryRouter)
 // Not blanket-gated — each file's requiresAuth flag decides individually.
 app.use('/api/downloads', downloadsRouter)
