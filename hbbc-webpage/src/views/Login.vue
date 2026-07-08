@@ -6,6 +6,10 @@
         <p class="text-xl text-gray-200">Melde dich mit deinem HBBC-Konto an.</p>
       </div>
 
+      <p v-if="redirectReason" class="bg-gray-800/50 border border-gray-600 rounded-lg px-4 py-3 text-sm text-gray-300 text-left">
+        {{ redirectReason }}
+      </p>
+
       <form
         class="bg-gray-800/50 backdrop-blur rounded-lg p-8 border border-gray-500 text-left space-y-6"
         @submit.prevent="handleSubmit"
@@ -54,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login } from '../auth'
 
@@ -62,6 +66,25 @@ type Status = 'idle' | 'sending' | 'error'
 
 const route = useRoute()
 const router = useRouter()
+
+// Router guard redirects here with ?redirect=<path> whenever a protected
+// page is visited while logged out — without this, that redirect happens
+// silently and looks like a bug ("why am I suddenly on the login page?").
+const PROTECTED_ROUTE_LABELS: Record<string, string> = {
+  '/events': 'die Termine',
+  '/gallery': 'die Galerie',
+  '/profile': 'dein Profil',
+  '/admin': 'den Admin-Bereich',
+}
+
+const redirectReason = computed(() => {
+  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null
+  if (!redirect) return ''
+  const label = PROTECTED_ROUTE_LABELS[redirect]
+  return label
+    ? `Für ${label} ist ein HBBC-Konto erforderlich. Bitte melde dich an, um fortzufahren.`
+    : 'Für diesen Bereich ist ein HBBC-Konto erforderlich. Bitte melde dich an, um fortzufahren.'
+})
 
 const email = ref('')
 const password = ref('')
