@@ -30,6 +30,7 @@ interface OpenLigaMatch {
   matchID: number
   matchDateTimeUTC: string
   leagueName: string
+  group: { groupName: string } | null
   team1: OpenLigaTeam
   team2: OpenLigaTeam
   matchIsFinished: boolean
@@ -41,8 +42,10 @@ export interface VfbMatch {
   id: number
   kickoff: string
   competition: string
+  matchday: string | null
   opponent: string
   opponentIcon: string | null
+  vfbIcon: string | null
   isHome: boolean
   status: 'upcoming' | 'live' | 'finished'
   score: { home: number; away: number } | null
@@ -73,13 +76,16 @@ const currentScore = (match: OpenLigaMatch): VfbMatch['score'] => {
 
 const toVfbMatch = (match: OpenLigaMatch): VfbMatch => {
   const isHome = match.team1.teamId === VFB_TEAM_ID
+  const vfbTeam = isHome ? match.team1 : match.team2
   const opponentTeam = isHome ? match.team2 : match.team1
   return {
     id: match.matchID,
     kickoff: match.matchDateTimeUTC,
     competition: match.leagueName,
+    matchday: match.group?.groupName ?? null,
     opponent: opponentTeam.teamName,
     opponentIcon: opponentTeam.teamIconUrl,
+    vfbIcon: vfbTeam.teamIconUrl,
     isHome,
     status: matchStatus(match),
     score: currentScore(match),
@@ -94,10 +100,12 @@ async function fetchSeasonMatches(league: string, season: number): Promise<OpenL
 
 // Hobby-project scale, single instance — an in-memory cache is enough to
 // avoid hitting OpenLigaDB on every page load without adding a dependency.
+// Caches every match (upcoming and finished) so both routes below can
+// derive their own view from one shared fetch instead of doubling requests.
 let cache: { fetchedAt: number; matches: VfbMatch[] } | null = null
 const CACHE_TTL_MS = 10 * 60 * 1000
 
-async function loadUpcomingVfbMatches(): Promise<VfbMatch[]> {
+async function loadAllVfbMatches(): Promise<VfbMatch[]> {
   if (cache && Date.now() - cache.fetchedAt < CACHE_TTL_MS) {
     return cache.matches
   }
@@ -123,8 +131,6 @@ async function loadUpcomingVfbMatches(): Promise<VfbMatch[]> {
     .filter((m) => m.team1.teamId === VFB_TEAM_ID || m.team2.teamId === VFB_TEAM_ID)
     .filter((m) => (seen.has(m.matchID) ? false : (seen.add(m.matchID), true)))
     .map(toVfbMatch)
-    .filter((m) => m.status !== 'finished')
-    .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
 
   cache = { fetchedAt: Date.now(), matches: vfbMatches }
   return vfbMatches
@@ -132,12 +138,31 @@ async function loadUpcomingVfbMatches(): Promise<VfbMatch[]> {
 
 router.get('/', async (_req, res) => {
   try {
-    const matches = await loadUpcomingVfbMatches()
+    const matches = (await loadAllVfbMatches())
+      .filter((m) => m.status !== 'finished')
+      .sort((a, b) => new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime())
     res.json({ matches })
   } catch (error) {
     console.error('[vfb-matches] failed to load matches:', error)
     // Best-effort feature — the rest of the Termine page (fanclub events)
     // should still work even if the external API is unreachable.
+    res.json({ matches: [] })
+  }
+})
+
+// Additive and separate from the upcoming-only list above (which /events
+// relies on for its "next match" card, unaffected by this route) — used by
+// the gallery's album-linking picker, so an album about a game already
+// played can reference it too.
+router.get('/recent', async (_req, res) => {
+  try {
+    const matches = (await loadAllVfbMatches())
+      .filter((m) => m.status === 'finished')
+      .sort((a, b) => new Date(b.kickoff).getTime() - new Date(a.kickoff).getTime())
+      .slice(0, 15)
+    res.json({ matches })
+  } catch (error) {
+    console.error('[vfb-matches] failed to load recent matches:', error)
     res.json({ matches: [] })
   }
 })

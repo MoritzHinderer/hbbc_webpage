@@ -1,140 +1,177 @@
 <template>
   <div class="min-h-screen" style="background: linear-gradient(to bottom, rgb(31, 41, 55) 0%, rgb(80, 7, 7) 100%);">
-    <div class="max-w-4xl mx-auto px-6 py-16 text-center space-y-12">
+    <div class="max-w-4xl mx-auto px-6 py-16 text-center space-y-10">
       <div class="space-y-4">
-        <h1 class="text-4xl md:text-5xl font-bold text-white">Termine</h1>
-        <p class="text-xl text-gray-200">Anstehende VfB-Spiele und Fanclub-Treffen.</p>
+        <h1 class="text-4xl md:text-5xl font-bold text-white">VfB-Spiele</h1>
+        <p class="text-xl text-gray-200">Der komplette Spielplan des VfB Stuttgart mit Live-Ergebnissen.</p>
       </div>
 
-      <div class="text-left space-y-4">
-        <h2 class="text-2xl font-bold text-white">Alle VfB-Spiele</h2>
-        <div v-if="vfbMatches.length" class="grid gap-3">
-          <div
-            v-for="match in vfbMatches"
-            :key="match.id"
-            class="bg-gray-800/50 backdrop-blur rounded-lg p-4 border border-gray-500 flex flex-wrap items-center justify-between gap-3"
-          >
-            <div class="flex items-center gap-3">
-              <img v-if="match.opponentIcon" :src="match.opponentIcon" alt="" class="w-8 h-8 object-contain" />
-              <div>
-                <p class="text-white font-medium">
-                  {{ match.isHome ? 'VfB Stuttgart' : match.opponent }}
-                  <span class="text-gray-500">vs</span>
-                  {{ match.isHome ? match.opponent : 'VfB Stuttgart' }}
-                </p>
-                <p class="text-sm text-gray-400">{{ formatKickoff(match.kickoff) }} · {{ match.competition }}</p>
-              </div>
-            </div>
-            <span
-              v-if="match.score"
-              :class="[
-                'text-sm font-semibold px-3 py-1 rounded-full',
-                match.status === 'live' ? 'bg-red-700/40 text-red-300' : 'bg-gray-700/60 text-gray-200',
-              ]"
-            >
-              {{ match.score.home }}:{{ match.score.away }}
-              <span v-if="match.status === 'live'">· live</span>
-            </span>
-          </div>
-        </div>
-        <div v-else class="bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-gray-500 text-gray-400 text-sm">
-          Aktuell konnten keine VfB-Spieldaten geladen werden.
-        </div>
-      </div>
-
-      <div v-if="upcoming.length" class="grid gap-6 text-left">
+      <div class="text-left space-y-6">
+        <!-- Featured: the next game -->
         <div
-          v-for="event in upcoming"
-          :key="event.title + event.date"
-          class="bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-gray-500 hover:scale-100 md:hover:scale-[1.02] transition-all duration-300"
+          v-if="nextMatch"
+          class="bg-gradient-to-br from-red-950/60 to-gray-800/60 backdrop-blur rounded-2xl border-2 border-red-600 p-6 sm:p-8 text-center cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-950/50"
+          @click="toggleMatch(nextMatch.id)"
         >
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <span
-                :class="[
-                  'inline-block text-xs font-semibold px-2 py-1 rounded-full mb-2',
-                  event.type === 'match' ? 'bg-red-700/40 text-red-300' : 'bg-green-700/40 text-green-300',
-                ]"
-              >
-                {{ event.type === 'match' ? 'VfB-Spiel' : 'Fanclub-Treffen' }}
-              </span>
-              <h2 class="text-lg font-semibold text-white">{{ event.title }}</h2>
-              <p class="text-sm text-gray-300 mt-1">{{ formatDateTime(event) }}</p>
-              <p v-if="event.location" class="text-sm text-gray-400">{{ event.location }}</p>
-              <p v-if="event.description" class="text-sm text-gray-300 mt-2">{{ event.description }}</p>
+          <p class="text-red-400 text-xs font-bold uppercase tracking-widest mb-5">Nächstes Spiel</p>
+          <div class="flex items-center justify-center gap-6 sm:gap-10">
+            <div class="flex flex-col items-center gap-2 w-24 sm:w-32">
+              <img
+                :src="nextMatch.isHome ? nextMatch.vfbIcon ?? undefined : nextMatch.opponentIcon ?? undefined"
+                alt=""
+                class="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+                @error="hideOnError"
+              />
+              <p class="text-white font-semibold text-sm sm:text-base">{{ nextMatch.isHome ? 'VfB Stuttgart' : nextMatch.opponent }}</p>
             </div>
+            <span class="text-gray-400 text-lg font-bold shrink-0">vs</span>
+            <div class="flex flex-col items-center gap-2 w-24 sm:w-32">
+              <img
+                :src="nextMatch.isHome ? nextMatch.opponentIcon ?? undefined : nextMatch.vfbIcon ?? undefined"
+                alt=""
+                class="w-16 h-16 sm:w-20 sm:h-20 object-contain"
+                @error="hideOnError"
+              />
+              <p class="text-white font-semibold text-sm sm:text-base">{{ nextMatch.isHome ? nextMatch.opponent : 'VfB Stuttgart' }}</p>
+            </div>
+          </div>
+          <p class="text-gray-300 mt-6">
+            {{ formatKickoff(nextMatch.kickoff) }}
+            <span v-if="nextMatch.matchday"> · {{ nextMatch.matchday }}</span>
+          </p>
+          <span
+            v-if="nextMatch.score"
+            :class="[
+              'inline-block mt-3 text-sm font-semibold px-3 py-1 rounded-full',
+              nextMatch.status === 'live' ? 'bg-red-700/40 text-red-300' : 'bg-gray-700/60 text-gray-200',
+            ]"
+          >
+            {{ nextMatch.score.home }}:{{ nextMatch.score.away }}
+            <span v-if="nextMatch.status === 'live'">· live</span>
+          </span>
+
+          <div v-if="expandedMatchId === nextMatch.id" class="mt-5 pt-5 border-t border-red-800/40 flex justify-center">
             <button
-              class="shrink-0 text-sm text-red-400 hover:text-red-300 border border-red-700 hover:border-red-500 rounded-md px-3 py-2 transition-colors"
-              @click="downloadIcs(event)"
+              class="text-sm text-red-400 hover:text-red-300 border border-red-700 hover:border-red-500 rounded-md px-4 py-2 transition-colors"
+              @click.stop="downloadMatchIcs(nextMatch)"
             >
               + Kalender
             </button>
           </div>
         </div>
-      </div>
 
-      <div v-else class="bg-gray-800/50 backdrop-blur rounded-lg p-10 border border-gray-500 text-gray-300">
-        Aktuell sind keine Termine geplant. Schau bald wieder vorbei!
-      </div>
-
-      <div v-if="past.length" class="text-left">
-        <h2 class="text-2xl font-bold text-white mb-4">Vergangene Termine</h2>
-        <ul class="space-y-2">
-          <li
-            v-for="event in past"
-            :key="event.title + event.date"
-            class="text-gray-400 text-sm border-b border-gray-800 pb-2"
+        <div v-if="remainingMatches.length" class="grid gap-3">
+          <div
+            v-for="match in remainingMatches"
+            :key="match.id"
+            class="group bg-gray-800/50 backdrop-blur rounded-xl border border-gray-600 overflow-hidden cursor-pointer transition-all duration-300 hover:border-red-500 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-red-950/40"
+            @click="toggleMatch(match.id)"
           >
-            {{ formatDateTime(event) }} — {{ event.title }}
-          </li>
-        </ul>
+            <div class="p-4 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  <img
+                    :src="match.isHome ? match.vfbIcon ?? undefined : match.opponentIcon ?? undefined"
+                    alt=""
+                    loading="lazy"
+                    class="w-6 h-6 sm:w-9 sm:h-9 object-contain"
+                    @error="hideOnError"
+                  />
+                  <span class="text-gray-500 text-xs font-semibold uppercase">vs</span>
+                  <img
+                    :src="match.isHome ? match.opponentIcon ?? undefined : match.vfbIcon ?? undefined"
+                    alt=""
+                    loading="lazy"
+                    class="w-6 h-6 sm:w-9 sm:h-9 object-contain"
+                    @error="hideOnError"
+                  />
+                </div>
+                <div>
+                  <p class="text-white font-medium">
+                    {{ match.isHome ? 'VfB Stuttgart' : match.opponent }}
+                    <span class="text-gray-500 font-normal">–</span>
+                    {{ match.isHome ? match.opponent : 'VfB Stuttgart' }}
+                  </p>
+                  <p class="text-sm text-gray-400">
+                    {{ formatKickoff(match.kickoff) }}
+                    <span v-if="match.matchday"> · {{ match.matchday }}</span>
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span
+                  v-if="match.score"
+                  :class="[
+                    'text-sm font-semibold px-3 py-1 rounded-full',
+                    match.status === 'live' ? 'bg-red-700/40 text-red-300' : 'bg-gray-700/60 text-gray-200',
+                  ]"
+                >
+                  {{ match.score.home }}:{{ match.score.away }}
+                  <span v-if="match.status === 'live'">· live</span>
+                </span>
+                <ChevronDownIcon
+                  class="w-4 h-4 text-gray-500 transition-transform group-hover:text-gray-300"
+                  :class="{ 'rotate-180': expandedMatchId === match.id }"
+                />
+              </div>
+            </div>
+
+            <div v-if="expandedMatchId === match.id" class="border-t border-gray-700 px-4 py-3 flex items-center justify-between gap-3">
+              <p class="text-sm text-gray-400">{{ match.competition }}</p>
+              <button
+                class="text-sm text-red-400 hover:text-red-300 border border-red-700 hover:border-red-500 rounded-md px-3 py-1.5 transition-colors"
+                @click.stop="downloadMatchIcs(match)"
+              >
+                + Kalender
+              </button>
+            </div>
+          </div>
+        </div>
+        <div v-if="!vfbMatches.length" class="bg-gray-800/50 backdrop-blur rounded-lg p-10 border border-gray-500 text-gray-400 text-center">
+          Aktuell konnten keine VfB-Spieldaten geladen werden.
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-interface ClubEvent {
-  title: string
-  date: string
-  time?: string
-  location?: string
-  type: 'match' | 'meetup'
-  description?: string
-}
+import { ref, computed, onMounted } from 'vue'
+import { ChevronDownIcon } from '@heroicons/vue/24/outline'
+import { downloadIcsEvent } from '../composables/useIcsDownload'
 
 interface VfbMatch {
   id: number
   kickoff: string
   competition: string
+  matchday: string | null
   opponent: string
   opponentIcon: string | null
+  vfbIcon: string | null
   isHome: boolean
   status: 'upcoming' | 'live' | 'finished'
   score: { home: number; away: number } | null
 }
 
-const events = ref<ClubEvent[]>([])
 const vfbMatches = ref<VfbMatch[]>([])
+const expandedMatchId = ref<number | null>(null)
 
-const eventTimestamp = (event: ClubEvent) => new Date(`${event.date}T${event.time || '00:00'}`).getTime()
+// vfbMatches is already sorted ascending by kickoff (server-side), so the
+// first entry is literally the next game — featured with its own bigger,
+// standout layout above the compact list of everything after it.
+const nextMatch = computed(() => vfbMatches.value[0] ?? null)
+const remainingMatches = computed(() => vfbMatches.value.slice(1))
 
-const upcoming = computed(() =>
-  events.value
-    .filter((event) => eventTimestamp(event) >= Date.now())
-    .sort((a, b) => eventTimestamp(a) - eventTimestamp(b)),
-)
+const toggleMatch = (id: number) => {
+  expandedMatchId.value = expandedMatchId.value === id ? null : id
+}
 
-const past = computed(() =>
-  events.value
-    .filter((event) => eventTimestamp(event) < Date.now())
-    .sort((a, b) => eventTimestamp(b) - eventTimestamp(a)),
-)
+// Team icons are externally hosted (Wikipedia/imgur, via OpenLigaDB) — hide
+// a broken image rather than showing the browser's default broken-image
+// glyph if one fails to load.
+const hideOnError = (event: Event) => {
+  ;(event.target as HTMLImageElement).style.visibility = 'hidden'
+}
 
 const formatKickoff = (kickoffIso: string) => {
   const date = new Date(kickoffIso)
@@ -143,62 +180,19 @@ const formatKickoff = (kickoffIso: string) => {
   return `${datePart}, ${timePart} Uhr`
 }
 
-const formatDateTime = (event: ClubEvent) => {
-  const date = new Date(`${event.date}T${event.time || '00:00'}`)
-  const datePart = date.toLocaleDateString('de-DE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-  return event.time ? `${datePart}, ${event.time} Uhr` : datePart
-}
-
-const toIcsDate = (event: ClubEvent) => {
-  const date = new Date(`${event.date}T${event.time || '00:00'}`)
-  return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
-}
-
-const downloadIcs = (event: ClubEvent) => {
-  const ics = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//HBBC//Termine//DE',
-    'BEGIN:VEVENT',
-    `UID:${event.date}-${event.title.replace(/\s+/g, '-')}@hbbc-fanclub.de`,
-    `DTSTAMP:${toIcsDate(event)}`,
-    `DTSTART:${toIcsDate(event)}`,
-    `SUMMARY:${event.title}`,
-    event.location ? `LOCATION:${event.location}` : '',
-    event.description ? `DESCRIPTION:${event.description}` : '',
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ]
-    .filter(Boolean)
-    .join('\r\n')
-
-  const blob = new Blob([ics], { type: 'text/calendar' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${event.title.replace(/\s+/g, '_')}.ics`
-  a.click()
-  URL.revokeObjectURL(url)
+const downloadMatchIcs = (match: VfbMatch) => {
+  const title = match.isHome ? `VfB Stuttgart vs. ${match.opponent}` : `${match.opponent} vs. VfB Stuttgart`
+  downloadIcsEvent({
+    uid: `vfb-${match.id}`,
+    title,
+    start: new Date(match.kickoff),
+    description: `${match.competition}${match.matchday ? ' - ' + match.matchday : ''}`,
+  })
 }
 
 onMounted(async () => {
   try {
-    const response = await fetch('/api/events', { credentials: 'include' })
-    if (response.status === 401) {
-      router.push({ path: '/login', query: { redirect: '/events' } })
-      return
-    }
-    if (!response.ok) throw new Error(`request failed with ${response.status}`)
-    const data: { events: ClubEvent[] } = await response.json()
-    events.value = data.events || []
-  } catch (error) {
-    console.error('Failed to load events:', error)
-  }
-
-  // Best-effort — the manually-curated Termine above still work even if
-  // this (external-API-backed) section fails to load.
-  try {
-    const response = await fetch('/api/vfb-matches', { credentials: 'include' })
+    const response = await fetch('/api/vfb-matches')
     if (!response.ok) throw new Error(`request failed with ${response.status}`)
     const data: { matches: VfbMatch[] } = await response.json()
     vfbMatches.value = data.matches || []

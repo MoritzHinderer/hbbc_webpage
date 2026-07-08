@@ -51,6 +51,12 @@ export const galleryPhotoUpload = multer({
   fileFilter: imageFileFilter,
 })
 
+export const newsImageUpload = multer({
+  storage: imageStorage(path.join(process.cwd(), 'server', 'content', 'news-photos')),
+  limits: { fileSize: MAX_IMAGE_SIZE },
+  fileFilter: imageFileFilter,
+})
+
 export const downloadFileUpload = multer({
   storage: multer.diskStorage({
     // Not public/ — some downloads require login, so the file itself must

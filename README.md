@@ -22,8 +22,8 @@ HBBC is an interregional fanclub that brings together passionate VfB Stuttgart s
 - **Modern Responsive Design** - Beautiful UI with gradient backgrounds and glass morphism effects
 - **Home Page** - Parallax scrolling hero section, animated member/founding-year stats, and a testimonials carousel drawn from member bios
 - **Members Page** - Display all club members with their photos, roles, and joining dates, a membership-growth chart, and a map of where members are based. Includes a call-to-action card to join the club
-- **Events/Termine** 🔒 - Fanclub meetups (admin-managed, with .ics calendar export) plus VfB Stuttgart's full official match schedule for the season, auto-fetched with live/final scores (members only)
-- **Gallery/Galerie** 🔒 - Photo gallery with a lightbox viewer (members only)
+- **Events/Termine** - Two tabs: VfB Stuttgart's full official match schedule with live/final scores, auto-fetched and public to everyone; and 🔒 Fanclub-Termine (admin-managed meetups, with .ics calendar export, members only)
+- **Gallery/Galerie** 🔒 - Photo gallery grouped into member-creatable albums, with a Swiper-powered slideshow (coverflow transitions + autoplay). Members can upload photos (queued for admin approval before going live); admins moderate uploads and manage albums (members only)
 - **Accounts & Admin approval** - Visitors can request an account; a club admin approves/rejects requests in an in-site dashboard (`/admin`) before Events/Gallery become accessible
 - **Admin content management** - The `/admin` dashboard also lets admins create/edit/delete Members (with photo upload), Events, Gallery photos, and Downloads directly on the site — no more hand-editing JSON files or dropping files into folders
 - **Downloads** - Easily accessible download section for important documents (member application forms, club info)
@@ -44,6 +44,7 @@ HBBC is an interregional fanclub that brings together passionate VfB Stuttgart s
 - **Heroicons** - Beautiful hand-crafted SVG icons
 - **Chart.js** - Membership growth chart
 - **Leaflet + OpenStreetMap** - Member location map (no API key required)
+- **Swiper** - Gallery slideshow (coverflow transitions, autoplay/"Diashow" toggle)
 - **OpenLigaDB** - Free, keyless public API for VfB Stuttgart's match schedule + live/final scores on the Termine page
 - **Express + Nodemailer** - Small backend for the contact form, newsletter, and account system (`server/`)
 - **`node:sqlite`** - Node's built-in SQLite module for user accounts/sessions/newsletter history — no database server or extra dependency needed
@@ -150,7 +151,8 @@ hbbc-webpage/
 │   │   ├── Home.vue             # Home page with parallax hero section
 │   │   ├── Downloads.vue        # Downloads page for documents
 │   │   ├── Members.vue          # Members gallery with photos
-│   │   ├── Events.vue           # Match/meetup calendar (members only)
+│   │   ├── Events.vue           # VfB-Spiele: full season schedule + scores (public)
+│   │   ├── ClubEvents.vue       # Fanclub-Termine: admin-managed meetups (members only)
 │   │   ├── Gallery.vue          # Photo gallery with lightbox (members only)
 │   │   ├── Contact.vue          # Contact form
 │   │   ├── Login.vue            # Login form
@@ -161,6 +163,8 @@ hbbc-webpage/
 │   │   └── Footer.vue           # Footer component
 │   ├── router/
 │   │   └── index.ts             # Vue Router configuration (lazy routes, auth guards)
+│   ├── composables/
+│   │   └── useIcsDownload.ts    # Shared .ics-file download helper (VfB-Spiele + Fanclub-Termine)
 │   ├── auth.ts                   # Frontend auth state (currentUser, login/logout/register)
 │   ├── App.vue                  # Root component
 │   └── main.ts                  # Application entry point
@@ -173,6 +177,7 @@ hbbc-webpage/
 │   ├── validation.ts            # Shared input validation
 │   ├── content-store.ts         # Generic JSON-array read/write + id backfill
 │   ├── members-shared.ts        # Member type + picture helpers, shared by admin + self-service routes
+│   ├── gallery-shared.ts        # Photo/album types + read/write helpers, shared by admin + self-service gallery routes
 │   ├── uploads.ts               # Multer configs (member pictures, gallery photos, downloads)
 │   ├── auth/
 │   │   ├── password.ts          # Password hashing (scrypt)
@@ -185,18 +190,19 @@ hbbc-webpage/
 │   │   ├── admin-users.ts       # admin: list all users, change role/status, delete
 │   │   ├── admin-members.ts     # admin CRUD for members.json + pictures
 │   │   ├── admin-events.ts      # admin CRUD for events.json
-│   │   ├── admin-gallery.ts     # admin CRUD for gallery.json + photos
+│   │   ├── admin-gallery.ts     # admin: moderate pending photos, CRUD photos/albums
 │   │   ├── admin-downloads.ts   # admin CRUD for downloads.json + files
 │   │   ├── admin-newsletter.ts  # admin: subscribers/history/send
 │   │   ├── profile.ts           # self-service: GET/POST/PUT/DELETE /api/profile/member (your own card) + PUT /api/profile/newsletter
 │   │   ├── events.ts            # GET /api/events (requires login)
-│   │   ├── vfb-matches.ts       # GET /api/vfb-matches — VfB Stuttgart's season fixtures + scores via OpenLigaDB (requires login)
-│   │   ├── gallery.ts           # GET /api/gallery + photos (requires login)
+│   │   ├── vfb-matches.ts       # GET /api/vfb-matches — VfB Stuttgart's season fixtures + scores via OpenLigaDB (public)
+│   │   ├── gallery.ts           # GET /api/gallery (approved only) + photos; member self-service upload/album creation
 │   │   └── downloads.ts         # GET /api/downloads/:file (per-file conditional login)
 │   ├── content/                 # Events/gallery/downloads data — NOT in public/,
 │   │   │                        # only reachable through the routes above
 │   │   ├── events.json
 │   │   ├── gallery.json
+│   │   ├── albums.json          # Gallery albums (member-creatable)
 │   │   ├── gallery-photos/
 │   │   └── downloads/           # The actual PDF files (manifest stays in public/, see below)
 │   ├── assets/
@@ -305,34 +311,70 @@ Events are defined in `server/content/events.json`:
 collapsed list; upcoming events show prominently with an "add to calendar" (.ics) button.
 Like members, `id` is backfilled automatically if missing.
 
-**VfB Stuttgart's full match schedule** shows separately, above the
-admin-curated Termine list, and needs no manual entry at all: `GET /api/vfb-matches`
+**VfB Stuttgart's full match schedule** lives on its own public page,
+`/events` (Vue component `Events.vue`, nav label "VfB-Spiele") — separate
+from `/fanclub-termine` (`ClubEvents.vue`, the admin-curated meetups above,
+members only) — and needs no manual entry at all: `GET /api/vfb-matches`
 fetches it from [OpenLigaDB](https://www.openligadb.de/) (a free, keyless public
 API for German football) and returns every remaining league match for the
-season with a computed `status` (`upcoming` / `live` / `finished`, based on
-kickoff time) and current `score` where available. Both top divisions
-(`bl1`/`bl2`) are checked so this keeps working across relegation/promotion
-without a code change. Responses are cached in memory for 10 minutes to
-avoid hitting the external API on every page load; if OpenLigaDB is
-unreachable, the route degrades to an empty list rather than breaking the
-rest of the Termine page.
+season, each with both teams' crests, the matchday, a computed `status`
+(`upcoming` / `live` / `finished`, based on kickoff time), and current
+`score` where available. Both top divisions (`bl1`/`bl2`) are checked so
+this keeps working across relegation/promotion without a code change.
+Responses are cached in memory for 10 minutes to avoid hitting the external
+API on every page load; if OpenLigaDB is unreachable, the route degrades to
+an empty list rather than breaking the page. This route is public — VfB's
+match schedule is public sports data, unlike `/api/events` (the fanclub's
+own meetups), which still requires login. Clicking a match card reveals an
+"add to calendar" (.ics) button for it too, same as the Fanclub-Termine
+events.
 
 ## 🖼️ Gallery Data Structure
 
-Manage the gallery at `/admin` (Galerie tab) — upload a photo with an
-optional caption, edit captions, or delete photos.
-
-Photos are defined in `server/content/gallery.json`, with image files placed in `server/content/gallery-photos/`:
+Photos come from two places: admins uploading directly at `/admin` (Galerie
+tab — auto-approved, no review needed), and members uploading from `/gallery`
+itself (queued for admin approval before anyone else sees them). Either way,
+photos land in `server/content/gallery.json`, with image files in
+`server/content/gallery-photos/`:
 
 ```json
 {
   "photos": [
-    { "file": "matchday_2025.jpg", "caption": "Optional caption" }
+    {
+      "file": "matchday_2025.jpg",
+      "caption": "Optional caption",
+      "albumId": 1,
+      "uploadedBy": 4,
+      "status": "approved",
+      "uploadedAt": "2026-07-08T20:17:55.017Z"
+    }
   ]
 }
 ```
 Photos are keyed by `file` (already unique — uploads get a generated name),
-not a numeric id.
+not a numeric id. `albumId`/`uploadedBy`/`status`/`uploadedAt` are all
+optional — photos from before this feature existed (or admin uploads) have
+none of them and are treated as approved and ungrouped
+(`server/gallery-shared.ts`'s `isApproved()`), so no data migration was
+needed.
+
+**Albums** are member-creatable groupings, stored in
+`server/content/albums.json`:
+```json
+{ "albums": [{ "id": 1, "name": "Sommerfest 2026", "createdBy": 4, "createdAt": "2026-07-08T20:17:29.864Z" }] }
+```
+Any logged-in member can create a new album while uploading a photo (or pick
+an existing one, or leave it ungrouped); admins can delete an album from
+`/admin` — its photos become ungrouped ("Ohne Album") rather than being
+deleted. The gallery page groups approved photos by album, and the
+slideshow (Swiper, coverflow effect + an autoplay "Diashow" toggle) browses
+through all of them in that same grouped order regardless of which
+thumbnail was clicked.
+
+**Moderation:** member uploads start as `status: "pending"` and are invisible
+on `/gallery` until an admin approves them from `/admin` → Galerie →
+"Ausstehende Fotos", which also shows who uploaded each one. Admin uploads
+skip this entirely (`status: "approved"` immediately).
 
 ## 📥 Downloads Data Structure
 
@@ -363,7 +405,8 @@ itself is still sitting at a guessable public URL.
 |-------|-----------|-------------|
 | `/` | Home.vue | Home page with club introduction |
 | `/members` | Members.vue | Club members gallery |
-| `/events` | Events.vue | Match/meetup calendar 🔒 requires login |
+| `/events` | Events.vue | VfB-Spiele: full match schedule + scores |
+| `/fanclub-termine` | ClubEvents.vue | Fanclub-Termine 🔒 requires login |
 | `/gallery` | Gallery.vue | Photo gallery 🔒 requires login |
 | `/downloads` | Downloads.vue | Downloadable documents |
 | `/contact` | Contact.vue | Contact form |
@@ -397,14 +440,15 @@ the account system. Everything else on the site is static.
 - `GET/POST /api/admin/members`, `PUT/DELETE /api/admin/members/:id` — admin-only CRUD for members, `POST`/`PUT` accept a multipart `picture` field. `PUT /api/admin/members/:id/link` (`{ user_id: number | null }`) attaches/detaches a card to/from a user account.
 - `GET/POST/PUT/DELETE /api/profile/member` — login-only (any approved user, not admin-only); always scoped to `req.user.id` server-side, so there's no `:id` to tamper with. Lets a member create, view, edit, or delete their *own* card. `role` and `joined` aren't accepted here — they're admin-assigned via the routes above.
 - `GET/POST /api/admin/events`, `PUT/DELETE /api/admin/events/:id` — admin-only CRUD for events.
-- `GET/POST /api/admin/gallery`, `PUT/DELETE /api/admin/gallery/:file` — admin-only CRUD for gallery photos, `POST` accepts a multipart `photo` field.
+- `GET/POST /api/admin/gallery`, `PUT/DELETE /api/admin/gallery/:file` — admin-only CRUD for gallery photos (`GET` includes pending ones + resolved `uploaderName`; `POST` accepts a multipart `photo` field and is auto-approved; `PUT` also accepts `albumId`). `POST /api/admin/gallery/:file/approve` — admin-only, approves a pending photo. `GET /api/admin/gallery/albums`, `DELETE /api/admin/gallery/albums/:id` — admin-only album visibility/cleanup (deleting one ungroups its photos, doesn't delete them).
 - `GET/POST /api/admin/downloads`, `PUT/DELETE /api/admin/downloads/:id` — admin-only CRUD for downloadable documents, `POST`/`PUT` accept a multipart `file` field (PDF only) and a `requiresAuth` field (the members-only checkbox).
 - `GET /api/admin/newsletter/subscribers` — admin-only, subscribed + approved users (id/name/email).
 - `GET /api/admin/newsletter/history` — admin-only, past sends (subject, recipient count, timestamp).
 - `POST /api/admin/newsletter/send` — admin-only, `{ subject, bodyHtml, testOnly? }`. Wraps `bodyHtml` (from the Tiptap editor) in the branded template and sends via Nodemailer with the club logo as a CID attachment. `testOnly: true` sends only to the calling admin's own address and isn't recorded in history; otherwise it sends to every subscribed + approved user and records one row in the `newsletters` table.
 - `PUT /api/profile/newsletter` — login-only, `{ subscribed: boolean }`; toggles the current user's own subscription.
-- `GET /api/events`, `GET /api/gallery`, `GET /api/gallery/photos/:file` — login-only; these read from `server/content/` (not `public/`), so the data is never reachable by URL without a valid session.
-- `GET /api/vfb-matches` — login-only; VfB Stuttgart's season fixtures + scores, proxied from OpenLigaDB and cached in memory for 10 minutes.
+- `GET /api/events`, `GET /api/gallery`, `GET /api/gallery/photos/:file` — login-only; these read from `server/content/` (not `public/`), so the data is never reachable by URL without a valid session. `GET /api/gallery` only returns approved photos.
+- `POST /api/gallery/photos` — login-only, multipart `photo` field + optional `caption`/`albumId`; any member's upload, always created as `status: "pending"`. `POST /api/gallery/albums` — login-only, `{ name }`; any member can create an album.
+- `GET /api/vfb-matches` — public; VfB Stuttgart's season fixtures + scores, proxied from OpenLigaDB and cached in memory for 10 minutes.
 - `GET /api/downloads/:file` — *not* blanket login-only like the two above; it looks up that specific file's `requiresAuth` flag in the (public) manifest and only requires a session if that flag is set. Public documents stay a one-hop download for everyone.
 - `/api/contact` and `/api/auth/register` are rate-limited (5–10 requests / 15 min / IP); `/api/auth/login` gets a more generous 30 / 15 min since mistyped passwords are normal and shouldn't lock someone out.
 - SMTP credentials go in `.env` (see `.env.example`); without them, mail-sending routes still respond successfully but just log what would have been sent.
@@ -529,6 +573,7 @@ For inquiries about HBBC, please contact through the website or email.
 - [x] Let the admin manage members/events/gallery/downloads from the website instead of hand-editing files
 - [x] Admin newsletter composer (WYSIWYG, branded template, test-send, send history) with per-account opt-in
 - [x] Auto-fetch VfB Stuttgart's full match schedule with live/final scores (OpenLigaDB) on the Termine page
+- [x] Member gallery uploads with admin approval, member-creatable albums, and a Swiper-powered slideshow
 - [ ] No automated tests or CI pipeline yet
 
 ## 🎓 Learning Resources

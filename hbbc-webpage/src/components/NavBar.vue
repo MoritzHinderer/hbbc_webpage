@@ -168,17 +168,21 @@ const navigate = (href: string) => {
 }
 
 // Navigation menu items - links are automatically highlighted based on current route.
-// Split into public pages and the members-only area (Termine/Galerie require
-// login), so the navbar can visually separate the two groups.
+// Split into public pages and the members-only area (require login), so
+// the navbar can visually separate the two groups. VfB-Spiele (the match
+// schedule) is public; Fanclub-Termine (club meetups) and Galerie require
+// an account — they're two separate pages/routes, not tabs of one page.
 const publicNavigationBase = [
     { name: 'Home', href: '/' },
+    { name: 'News', href: '/news' },
     { name: 'Mitglieder', href: '/members' },
+    { name: 'VfB-Spiele', href: '/events' },
     { name: 'Downloads', href: '/downloads' },
     { name: 'Kontakt', href: '/contact' },
 ]
 
 const memberNavigationBase = [
-    { name: 'Termine', href: '/events' },
+    { name: 'Fanclub-Termine', href: '/fanclub-termine' },
     { name: 'Galerie', href: '/gallery' },
 ]
 

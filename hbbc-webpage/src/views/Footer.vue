@@ -25,7 +25,8 @@
                     <ul class="space-y-2">
                         <li><router-link to="/" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Home</router-link></li>
                         <li><router-link to="/members" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Mitglieder</router-link></li>
-                        <li><router-link to="/events" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Termine</router-link></li>
+                        <li><router-link to="/events" class="text-gray-400 hover:text-red-500 transition-colors text-sm">VfB-Spiele</router-link></li>
+                        <li><router-link to="/fanclub-termine" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Fanclub-Termine</router-link></li>
                         <li><router-link to="/gallery" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Galerie</router-link></li>
                         <li><router-link to="/downloads" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Downloads</router-link></li>
                         <li><router-link to="/contact" class="text-gray-400 hover:text-red-500 transition-colors text-sm">Kontakt</router-link></li>

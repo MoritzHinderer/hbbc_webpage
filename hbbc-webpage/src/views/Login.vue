@@ -71,7 +71,7 @@ const router = useRouter()
 // page is visited while logged out — without this, that redirect happens
 // silently and looks like a bug ("why am I suddenly on the login page?").
 const PROTECTED_ROUTE_LABELS: Record<string, string> = {
-  '/events': 'die Termine',
+  '/fanclub-termine': 'die Fanclub-Termine',
   '/gallery': 'die Galerie',
   '/profile': 'dein Profil',
   '/admin': 'den Admin-Bereich',

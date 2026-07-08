@@ -12,6 +12,10 @@ import adminGalleryRouter from './routes/admin-gallery.js'
 import adminDownloadsRouter from './routes/admin-downloads.js'
 import adminUsersRouter from './routes/admin-users.js'
 import adminNewsletterRouter from './routes/admin-newsletter.js'
+import adminAnalyticsRouter from './routes/admin-analytics.js'
+import analyticsRouter from './routes/analytics.js'
+import adminNewsRouter from './routes/admin-news.js'
+import newsRouter from './routes/news.js'
 import eventsRouter from './routes/events.js'
 import vfbMatchesRouter from './routes/vfb-matches.js'
 import galleryRouter from './routes/gallery.js'
@@ -36,6 +40,15 @@ const formLimiter = rateLimit({
   legacyHeaders: false,
 })
 
+// Every page navigation fires one of these, so it needs a much more
+// generous cap than form submissions — just enough to blunt abuse.
+const pageviewLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
 app.use('/api/contact', formLimiter, contactRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/admin', requireAdmin, adminRouter)
@@ -45,9 +58,17 @@ app.use('/api/admin/gallery', requireAdmin, adminGalleryRouter)
 app.use('/api/admin/downloads', requireAdmin, adminDownloadsRouter)
 app.use('/api/admin/users', requireAdmin, adminUsersRouter)
 app.use('/api/admin/newsletter', requireAdmin, adminNewsletterRouter)
+app.use('/api/admin/analytics', requireAdmin, adminAnalyticsRouter)
+app.use('/api/admin/news', requireAdmin, adminNewsRouter)
+// Public on purpose — anonymous visitors get counted too, not just logged-in members.
+app.use('/api/analytics', pageviewLimiter, analyticsRouter)
+// Public on purpose — news articles are announcements meant for all visitors, not just members.
+app.use('/api/news', newsRouter)
 app.use('/api/profile', requireAuth, profileRouter)
 app.use('/api/events', requireAuth, eventsRouter)
-app.use('/api/vfb-matches', requireAuth, vfbMatchesRouter)
+// Public on purpose — VfB's match schedule/scores are public sports data,
+// unlike the fanclub's own Termine (still requireAuth above).
+app.use('/api/vfb-matches', vfbMatchesRouter)
 app.use('/api/gallery', requireAuth, galleryRouter)
 // Not blanket-gated — each file's requiresAuth flag decides individually.
 app.use('/api/downloads', downloadsRouter)

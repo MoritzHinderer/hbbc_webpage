@@ -27,6 +27,8 @@
       <AdminGallery v-else-if="activeTab === 'gallery'" />
       <AdminDownloads v-else-if="activeTab === 'downloads'" />
       <AdminNewsletter v-else-if="activeTab === 'newsletter'" />
+      <AdminAnalytics v-else-if="activeTab === 'analytics'" />
+      <AdminNews v-else-if="activeTab === 'news'" />
     </div>
   </div>
 </template>
@@ -39,6 +41,8 @@ import AdminEvents from '../components/admin/AdminEvents.vue'
 import AdminGallery from '../components/admin/AdminGallery.vue'
 import AdminDownloads from '../components/admin/AdminDownloads.vue'
 import AdminNewsletter from '../components/admin/AdminNewsletter.vue'
+import AdminAnalytics from '../components/admin/AdminAnalytics.vue'
+import AdminNews from '../components/admin/AdminNews.vue'
 
 const tabs = [
   { id: 'requests', label: 'Kontoanfragen' },
@@ -47,6 +51,8 @@ const tabs = [
   { id: 'gallery', label: 'Galerie' },
   { id: 'downloads', label: 'Downloads' },
   { id: 'newsletter', label: 'Newsletter' },
+  { id: 'analytics', label: 'Statistiken' },
+  { id: 'news', label: 'News' },
 ] as const
 
 const activeTab = ref<(typeof tabs)[number]['id']>('requests')

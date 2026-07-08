@@ -48,6 +48,15 @@ db.exec(`
   )
 `)
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS page_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    path TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )
+`)
+db.exec(`CREATE INDEX IF NOT EXISTS idx_page_views_created_at ON page_views(created_at)`)
+
 export type Role = 'member' | 'admin'
 export type AccountStatus = 'pending' | 'approved' | 'rejected'
 

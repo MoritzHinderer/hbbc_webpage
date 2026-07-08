@@ -2,37 +2,41 @@ import { Router } from 'express'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { galleryPhotoUpload } from '../uploads.js'
+import { db } from '../db.js'
+import {
+  photosDir,
+  isSafeFilename,
+  readAlbums,
+  readPhotos,
+  writeAlbums,
+  writePhotos,
+} from '../gallery-shared.js'
 
 const router = Router()
-const contentDir = path.join(process.cwd(), 'server', 'content')
-const galleryFile = path.join(contentDir, 'gallery.json')
-const photosDir = path.join(contentDir, 'gallery-photos')
-
-interface Photo {
-  file: string
-  caption?: string
-}
-
-async function readPhotos(): Promise<Photo[]> {
-  try {
-    const raw = await fs.readFile(galleryFile, 'utf-8')
-    return (JSON.parse(raw).photos as Photo[]) ?? []
-  } catch {
-    return []
-  }
-}
-
-async function writePhotos(photos: Photo[]): Promise<void> {
-  await fs.writeFile(galleryFile, JSON.stringify({ photos }, null, 2))
-}
-
-// Filenames only ever come from our own multer-generated UUIDs, but the
-// :file route param is user-supplied, so it still needs the same
-// no-slashes check as the public download route before touching the disk.
-const isSafeFilename = (file: string) => /^[\w.-]+$/.test(file)
 
 router.get('/', async (_req, res) => {
-  res.json({ photos: await readPhotos() })
+  const photos = await readPhotos()
+
+  // Resolve uploader names for the moderation queue — most photos have no
+  // uploadedBy at all (pre-existing/admin-uploaded), so only look up the
+  // handful of distinct ids actually present rather than joining per-row.
+  const uploaderIds = [...new Set(photos.map((p) => p.uploadedBy).filter((id): id is number => id != null))]
+  const uploaderNames = new Map<number, string>()
+  if (uploaderIds.length) {
+    const placeholders = uploaderIds.map(() => '?').join(',')
+    const rows = db.prepare(`SELECT id, name FROM users WHERE id IN (${placeholders})`).all(...uploaderIds) as {
+      id: number
+      name: string
+    }[]
+    for (const row of rows) uploaderNames.set(row.id, row.name)
+  }
+
+  const photosWithUploader = photos.map((photo) => ({
+    ...photo,
+    uploaderName: photo.uploadedBy != null ? (uploaderNames.get(photo.uploadedBy) ?? null) : null,
+  }))
+
+  res.json({ photos: photosWithUploader, albums: await readAlbums() })
 })
 
 router.post('/', galleryPhotoUpload.single('photo'), async (req, res) => {
@@ -42,13 +46,42 @@ router.post('/', galleryPhotoUpload.single('photo'), async (req, res) => {
   }
 
   const caption = typeof req.body?.caption === 'string' ? req.body.caption.slice(0, 300) : undefined
+  const albumIdRaw = req.body?.albumId
+  const albumId = typeof albumIdRaw === 'string' && albumIdRaw.trim() !== '' ? Number(albumIdRaw) : null
 
   const photos = await readPhotos()
-  const photo: Photo = { file: req.file.filename, ...(caption ? { caption } : {}) }
+  // Admin uploads don't need admin approval — they're already the approver.
+  const photo = {
+    file: req.file.filename,
+    ...(caption ? { caption } : {}),
+    albumId: Number.isInteger(albumId) ? albumId : null,
+    uploadedBy: req.user!.id,
+    status: 'approved' as const,
+    uploadedAt: new Date().toISOString(),
+  }
   photos.push(photo)
   await writePhotos(photos)
 
   res.json({ ok: true, photo })
+})
+
+router.post('/:file/approve', async (req, res) => {
+  const { file } = req.params
+  if (!isSafeFilename(file)) {
+    res.status(400).json({ error: 'Ungültiger Dateiname.' })
+    return
+  }
+
+  const photos = await readPhotos()
+  const index = photos.findIndex((p) => p.file === file)
+  if (index === -1) {
+    res.status(404).json({ error: 'Bild nicht gefunden.' })
+    return
+  }
+
+  photos[index] = { ...photos[index], status: 'approved' }
+  await writePhotos(photos)
+  res.json({ ok: true, photo: photos[index] })
 })
 
 router.put('/:file', async (req, res) => {
@@ -66,7 +99,15 @@ router.put('/:file', async (req, res) => {
   }
 
   const caption = typeof req.body?.caption === 'string' ? req.body.caption.slice(0, 300) : undefined
-  photos[index] = { file, ...(caption ? { caption } : {}) }
+  const albumIdRaw = req.body?.albumId
+  const albumId =
+    albumIdRaw === null || albumIdRaw === '' ? null : typeof albumIdRaw === 'string' ? Number(albumIdRaw) : undefined
+
+  photos[index] = {
+    ...photos[index],
+    ...(caption !== undefined ? { caption } : {}),
+    ...(albumId !== undefined ? { albumId: Number.isInteger(albumId) ? albumId : null } : {}),
+  }
 
   await writePhotos(photos)
   res.json({ ok: true, photo: photos[index] })
@@ -86,9 +127,44 @@ router.delete('/:file', async (req, res) => {
     return
   }
 
+  // Also how a pending photo gets rejected — there's no separate
+  // "rejected" state, it's just removed.
   photos.splice(index, 1)
   await writePhotos(photos)
   await fs.unlink(path.join(photosDir, file)).catch(() => {})
+
+  res.json({ ok: true })
+})
+
+router.get('/albums', async (_req, res) => {
+  res.json({ albums: await readAlbums() })
+})
+
+router.delete('/albums/:id', async (req, res) => {
+  const id = Number(req.params.id)
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: 'Ungültige Album-ID.' })
+    return
+  }
+
+  const albums = await readAlbums()
+  const index = albums.findIndex((a) => a.id === id)
+  if (index === -1) {
+    res.status(404).json({ error: 'Album nicht gefunden.' })
+    return
+  }
+  albums.splice(index, 1)
+  await writeAlbums(albums)
+
+  // Photos in a deleted album become ungrouped rather than orphaned.
+  const photos = await readPhotos()
+  let changed = false
+  const updated = photos.map((p) => {
+    if (p.albumId !== id) return p
+    changed = true
+    return { ...p, albumId: null }
+  })
+  if (changed) await writePhotos(updated)
 
   res.json({ ok: true })
 })

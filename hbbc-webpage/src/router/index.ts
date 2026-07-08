@@ -8,6 +8,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import("../views/Home.vue"),
     },
     {
+        path: "/news",
+        name: "news",
+        component: () => import("../views/News.vue"),
+    },
+    {
         path: "/downloads",
         name: "downloads",
         component: () => import("../views/Downloads.vue"),
@@ -18,9 +23,15 @@ const routes: RouteRecordRaw[] = [
         component: () => import("../views/Members.vue"),
     },
     {
+        // Public: VfB's match schedule/scores need no account.
         path: "/events",
         name: "events",
         component: () => import("../views/Events.vue"),
+    },
+    {
+        path: "/fanclub-termine",
+        name: "club-events",
+        component: () => import("../views/ClubEvents.vue"),
         meta: { requiresAuth: true },
     },
     {
@@ -88,6 +99,16 @@ router.beforeEach(async (to) => {
     }
 
     return true
+})
+
+// Fire-and-forget: a lightweight beacon for the admin analytics dashboard.
+// Never blocks or breaks navigation if it fails.
+router.afterEach((to) => {
+    fetch("/api/analytics/pageview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: to.path }),
+    }).catch(() => {})
 })
 
 export default router
