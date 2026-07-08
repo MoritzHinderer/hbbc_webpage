@@ -1,0 +1,10 @@
+{
+  "albums": [
+    {
+      "id": 1,
+      "name": "HBBC Sommerfest 2026",
+      "createdBy": 4,
+      "createdAt": "2026-07-08T21:00:36.392Z"
+    }
+  ]
+}
