@@ -6,7 +6,8 @@
       "role": "Vorsitzender",
       "joined": "2025-05-20",
       "location": "Hamburg",
-      "about_me": "Ich bin Joshua, 24 Jahre alt und studiere Maschinenbau im Master an der TUHH. Seit meiner Kindheit bin ich begeisterter VfB Stuttgart Fan und freue mich sehr, den HBBC als Vorsitzender mitgestalten zu dürfen."
+      "about_me": "Ich bin Joshua, 24 Jahre alt und studiere Maschinenbau im Master an der TUHH. Seit meiner Kindheit bin ich begeisterter VfB Stuttgart Fan und freue mich sehr, den HBBC als Vorsitzender mitgestalten zu dürfen.",
+      "user_id": null
     },
     {
       "id": 2,
@@ -18,12 +19,12 @@
       "user_id": 4
     },
     {
+      "id": 3,
       "name": "Paul Otto Georg",
       "role": "Kassenwart",
       "joined": "2025-05-20",
-      "location": "Hamburg",
       "about_me": "Moin, ich bin Paul, 24 Jahre alt und studiere Wirtschaftsingenieurwesen im Master an der TUHH. Als großer VfB Stuttgart Fan freue ich mich sehr, den HBBC als Kassenwart mitzugestalten und gemeinsam mit euch spannende Fußballmomente zu erleben.",
-      "id": 3
+      "location": "Stuttgart"
     },
     {
       "name": "Roman",

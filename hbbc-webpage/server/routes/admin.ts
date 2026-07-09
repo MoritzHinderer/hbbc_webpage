@@ -42,11 +42,10 @@ router.post('/requests/:id/approve', async (req, res) => {
         'Diese Nachricht wurde automatisch von der HBBC-Webseite gesendet.',
       )
       await sendHtmlMail({
-        to: process.env.CONTACT_TO_EMAIL!,
+        to: user.email,
         subject: 'Dein HBBC-Konto wurde freigeschaltet',
         html,
         attachments,
-        replyTo: user.email,
       })
     } catch (error) {
       console.error('[admin] failed to send approval notification:', error)
