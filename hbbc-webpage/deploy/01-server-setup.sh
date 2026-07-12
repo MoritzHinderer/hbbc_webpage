@@ -31,12 +31,29 @@ if ! id -u hbbc >/dev/null 2>&1; then
   adduser --disabled-password --gecos "" hbbc
 fi
 
-# Narrow, passwordless sudo — only for restarting/checking this one
-# service, so deploy/02-deploy.sh can restart the app after a build
-# without the 'hbbc' user having any broader root access.
-echo "==> Granting 'hbbc' passwordless sudo for just this service"
+# A tiny fixed-path wrapper, rather than granting sudo on `systemctl
+# restart hbbc-webpage` directly — sudoers matches the full command
+# *and its exact arguments*, which is fragile (e.g. `systemctl` might
+# resolve to a different real path than expected, or a script calling it
+# with one extra flag silently falls outside the allowed pattern and
+# sudo asks for a password `hbbc` doesn't have, since it was created
+# with --disabled-password). A single no-argument-ambiguity wrapper path
+# sidesteps all of that.
+echo "==> Installing the restart wrapper + granting 'hbbc' passwordless sudo on it"
+cat > /usr/local/bin/hbbc-webpage-ctl <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-}" in
+  restart) exec systemctl restart hbbc-webpage ;;
+  status) exec systemctl --no-pager status hbbc-webpage ;;
+  *) echo "Usage: hbbc-webpage-ctl {restart|status}" >&2; exit 1 ;;
+esac
+EOF
+chmod 755 /usr/local/bin/hbbc-webpage-ctl
+chown root:root /usr/local/bin/hbbc-webpage-ctl
+
 cat > /etc/sudoers.d/hbbc-webpage <<'EOF'
-hbbc ALL=(root) NOPASSWD: /bin/systemctl restart hbbc-webpage, /bin/systemctl status hbbc-webpage
+hbbc ALL=(root) NOPASSWD: /usr/local/bin/hbbc-webpage-ctl
 EOF
 chmod 440 /etc/sudoers.d/hbbc-webpage
 visudo -cf /etc/sudoers.d/hbbc-webpage

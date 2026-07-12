@@ -112,3 +112,38 @@ su - hbbc -c 'bash ~/hbbc_webpage/hbbc-webpage/deploy/02-deploy.sh'
 Pulls latest `main`, rebuilds, restarts the service. SQLite data and all
 uploaded content are untouched (they're gitignored, so `git pull` never
 touches them).
+
+## Troubleshooting
+
+**`sudo: a password is required` when `02-deploy.sh` tries to restart the
+service.** The `hbbc` user has no password at all (created with
+`--disabled-password`), so if the passwordless sudo rule isn't matching
+for any reason, there's no password you can type to get past it — this
+means `01-server-setup.sh` didn't finish installing
+`/usr/local/bin/hbbc-webpage-ctl` and its sudoers rule correctly (or ran
+an older version of this script). Re-run just that part as root:
+
+```bash
+cat > /usr/local/bin/hbbc-webpage-ctl <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-}" in
+  restart) exec systemctl restart hbbc-webpage ;;
+  status) exec systemctl --no-pager status hbbc-webpage ;;
+  *) echo "Usage: hbbc-webpage-ctl {restart|status}" >&2; exit 1 ;;
+esac
+EOF
+chmod 755 /usr/local/bin/hbbc-webpage-ctl
+chown root:root /usr/local/bin/hbbc-webpage-ctl
+
+cat > /etc/sudoers.d/hbbc-webpage <<'EOF'
+hbbc ALL=(root) NOPASSWD: /usr/local/bin/hbbc-webpage-ctl
+EOF
+chmod 440 /etc/sudoers.d/hbbc-webpage
+visudo -cf /etc/sudoers.d/hbbc-webpage
+```
+
+(Earlier versions of this script granted sudo on `systemctl restart
+hbbc-webpage` directly — sudoers matches the full command *and its exact
+arguments*, which is fragile. The fixed-path wrapper above sidesteps
+that entirely.)

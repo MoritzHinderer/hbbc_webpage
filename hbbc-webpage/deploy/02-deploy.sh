@@ -37,5 +37,5 @@ echo "==> Building frontend"
 npm run build
 
 echo "==> Restarting service"
-sudo systemctl restart hbbc-webpage
-sudo systemctl --no-pager status hbbc-webpage
+sudo /usr/local/bin/hbbc-webpage-ctl restart
+sudo /usr/local/bin/hbbc-webpage-ctl status
