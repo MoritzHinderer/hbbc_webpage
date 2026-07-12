@@ -15,16 +15,15 @@
         <section>
           <h2 class="text-lg font-semibold text-white mb-2">Anschrift</h2>
           <p class="border border-dashed border-amber-500/60 bg-amber-500/10 text-amber-200 rounded-md p-4">
-            ⚠ Platzhalter — hier fehlt noch eine echte, ladungsfähige Anschrift
-            (Straße, Hausnummer, PLZ, Ort). Diese Seite darf erst live gehen,
-            wenn diese Angabe durch eine echte Adresse ersetzt wurde — ohne
-            sie ist das Impressum rechtlich unvollständig.
+            Platzhalter
           </p>
         </section>
 
         <section>
           <h2 class="text-lg font-semibold text-white mb-2">Vertreten durch</h2>
-          <p>Platzhalter</p>
+          <p class="border border-dashed border-amber-500/60 bg-amber-500/10 text-amber-200 rounded-md p-4">
+            Platzhalter
+          </p>
         </section>
 
         <section>
@@ -38,7 +37,9 @@
         <section>
           <h2 class="text-lg font-semibold text-white mb-2">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
           <p>
-            Platzhalter<br />
+            <p class="border border-dashed border-amber-500/60 bg-amber-500/10 text-amber-200 rounded-md p-4">
+            Platzhalter
+          </p>
             Anschrift wie oben
           </p>
         </section>
