@@ -79,8 +79,16 @@ app.get('/api/health', (_req, res) => {
 
 if (process.env.NODE_ENV === 'production') {
   const distDir = path.join(process.cwd(), 'dist')
-  app.use(express.static(distDir))
-  app.get('*', (_req, res) => {
+  // redirect: false — a couple of SPA routes (/members, /downloads) share
+  // a name with a real static subfolder (member/download data JSON), and
+  // serve-static's default behavior 301-redirects directory-like request
+  // paths to add a trailing slash. Disabling that lets those routes fall
+  // through to the SPA catch-all below like any other client-side route,
+  // instead of an unnecessary extra redirect hop.
+  app.use(express.static(distDir, { redirect: false }))
+  // Express 5's routing (path-to-regexp v8) requires a named wildcard —
+  // a bare '*' throws "Missing parameter name" at startup.
+  app.get('/*splat', (_req, res) => {
     res.sendFile(path.join(distDir, 'index.html'))
   })
 }
