@@ -16,6 +16,13 @@ dist-ssr
 .env
 server/data/
 
+# Admin-editable runtime content (events/news/gallery/downloads/members
+# JSON + all uploaded files) — lives on the server's own disk, same as
+# server/data/ above. Must never be git-tracked: a deploy runs `git pull`,
+# and a tracked file here could let a future commit silently overwrite or
+# conflict with live admin-entered content.
+server/content/
+
 # Personal working notes, not project docs
 TODO.md
 

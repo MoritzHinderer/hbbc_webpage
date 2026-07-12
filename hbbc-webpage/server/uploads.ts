@@ -40,7 +40,7 @@ function imageStorage(destDir: string) {
 }
 
 export const memberPictureUpload = multer({
-  storage: imageStorage(path.join(process.cwd(), 'public', 'member_pictures')),
+  storage: imageStorage(path.join(process.cwd(), 'server', 'content', 'member_pictures')),
   limits: { fileSize: MAX_IMAGE_SIZE },
   fileFilter: imageFileFilter,
 })

@@ -19,7 +19,7 @@ router.get('/member', async (req, res) => {
 
   const picturePath = await findExistingPicture(mine.name)
   res.json({
-    member: { ...mine, picture: picturePath ? `/member_pictures/${picturePath.split('/').pop()}` : null },
+    member: { ...mine, picture: picturePath ? `/api/members/pictures/${picturePath.split('/').pop()}` : null },
   })
 })
 

@@ -16,6 +16,7 @@ import adminAnalyticsRouter from './routes/admin-analytics.js'
 import analyticsRouter from './routes/analytics.js'
 import adminNewsRouter from './routes/admin-news.js'
 import newsRouter from './routes/news.js'
+import membersRouter from './routes/members.js'
 import eventsRouter from './routes/events.js'
 import vfbMatchesRouter from './routes/vfb-matches.js'
 import galleryRouter from './routes/gallery.js'
@@ -64,6 +65,10 @@ app.use('/api/admin/news', requireAdmin, adminNewsRouter)
 app.use('/api/analytics', pageviewLimiter, analyticsRouter)
 // Public on purpose — news articles are announcements meant for all visitors, not just members.
 app.use('/api/news', newsRouter)
+// Public on purpose — club membership isn't sensitive, and the /members
+// page itself is public. Replaces the old static-file fetch, which in
+// production never reflected admin edits/deletes until the next rebuild.
+app.use('/api/members', membersRouter)
 app.use('/api/profile', requireAuth, profileRouter)
 app.use('/api/events', requireAuth, eventsRouter)
 // Public on purpose — VfB's match schedule/scores are public sports data,

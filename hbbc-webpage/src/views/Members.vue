@@ -89,7 +89,7 @@ const formatDate = (dateString: string) => {
 const buildPicturePath = (name: string, attempt: number): string | null => {
   const ext = pictureExtensions[attempt]
   if (!ext) return null
-  return `/member_pictures/${name.replace(/\s+/g, '_')}.${ext}`
+  return `/api/members/pictures/${name.replace(/\s+/g, '_')}.${ext}`
 }
 
 // Pictures are looked up by naming convention; if a file for the current
@@ -101,7 +101,7 @@ const handleImageError = (member: Member) => {
 
 onMounted(async () => {
   try {
-    const response = await fetch('/members/members.json')
+    const response = await fetch('/api/members')
     const data: { member: RawMember[] } = await response.json()
 
     members.value = data.member.map((member) => ({

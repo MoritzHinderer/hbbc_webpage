@@ -101,6 +101,27 @@ Visit `https://hbbc-fanclub.de` — should load the real site, not a
 static/broken shell. Log in, check `/admin`, confirm `/api/*` calls
 succeed (no more 404s like the Deploy Now attempt had).
 
+## One-time: migrating content out of git tracking
+
+`server/content/` (events, news, gallery photos, downloads, member data)
+and the old `public/members/members.json` were originally committed to
+git by mistake — risky for a live site, since a deploy runs `git pull`,
+and any future commit touching those paths could conflict with or
+silently overwrite live admin-entered content. If you deployed before
+this was fixed, run this **once**, in place of a normal deploy, to pick
+up the fix safely:
+
+```bash
+bash ~/hbbc_webpage/hbbc-webpage/deploy/03-migrate-content-tracking.sh
+bash ~/hbbc_webpage/hbbc-webpage/deploy/02-deploy.sh
+```
+
+The first script backs up all live content, pulls, and restores it —
+safe regardless of whether any individual file had been modified or not
+(a plain `git pull` here can silently delete unmodified-but-newly-
+untracked files — verified empirically before writing this). New
+deploys after this one-time step are back to just `02-deploy.sh`.
+
 ## Shipping future updates
 
 From then on, every update is just:

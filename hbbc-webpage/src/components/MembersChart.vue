@@ -20,7 +20,7 @@ const generateMembershipData = async () => {
   // Fetch actual member data
   let members: Member[] = []
   try {
-    const response = await fetch('/members/members.json')
+    const response = await fetch('/api/members')
     const data = await response.json()
     members = data.member || []
   } catch (error) {
