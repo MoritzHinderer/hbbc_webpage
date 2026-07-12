@@ -18,6 +18,10 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-12
+
+Fixed double "v" in verison tag in footer
+
 ## [0.1.0] - 2026-07-12
 
 First versioned release — covers everything built up to this point.
