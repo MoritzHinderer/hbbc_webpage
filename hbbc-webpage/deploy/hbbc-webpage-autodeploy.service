@@ -1,0 +1,12 @@
+[Unit]
+Description=Check for and deploy a new HBBC webpage version tag
+# Don't fight the app's own (re)starts — if a normal restart is already
+# in flight when the timer fires, let it finish first.
+After=network.target hbbc-webpage.service
+
+[Service]
+Type=oneshot
+User=hbbc
+Group=hbbc
+WorkingDirectory=/home/hbbc/hbbc_webpage/hbbc-webpage
+ExecStart=/usr/bin/bash /home/hbbc/hbbc_webpage/hbbc-webpage/deploy/04-auto-deploy.sh

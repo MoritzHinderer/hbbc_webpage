@@ -39,7 +39,8 @@
                 <!-- Bottom footer -->
                 <div class="flex flex-col md:flex-row justify-between items-center">
                     <p class="text-gray-500 text-sm mb-4 md:mb-0">
-                        &copy; 2025 HBBC. All rights reserved.
+                        &copy; {{ currentYear }} HBBC. All rights reserved.
+                        <span class="text-gray-600">&middot; v{{ appVersion }}</span>
                     </p>
                     
                     <!-- Footer legal links -->
@@ -53,6 +54,11 @@
         </div>
     </footer>
 </template>
+
+<script setup lang="ts">
+const currentYear = new Date().getFullYear()
+const appVersion = __APP_VERSION__
+</script>
 
 <style scoped>
 </style>

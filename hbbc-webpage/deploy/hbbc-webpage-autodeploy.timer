@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodically check for a new HBBC webpage version tag
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=1h
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

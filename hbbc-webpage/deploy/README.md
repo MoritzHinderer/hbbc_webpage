@@ -134,6 +134,59 @@ Pulls latest `main`, rebuilds, restarts the service. SQLite data and all
 uploaded content are untouched (they're gitignored, so `git pull` never
 touches them).
 
+## Optional: auto-deploy on new version tags
+
+Instead of SSHing in for every update, the VPS can watch for a new
+version tag (`vX.Y.Z`) and deploy it automatically. `main` can carry
+work-in-progress commits — only a pushed tag ever reaches production, and
+the tagged commit gets checked out exactly (not just "whatever's on
+`main`"). A failed build is safe by construction: the same `set -euo
+pipefail` + `vue-tsc -b` before `vite build` ordering that already
+protects `02-deploy.sh` means a bad release never reaches the restart
+step, and the previous version keeps serving.
+
+Install it once (as root, after step 4 above — the unit files live in the
+repo, so this needs the first `git clone` to have already happened):
+
+```bash
+cp /home/hbbc/hbbc_webpage/hbbc-webpage/deploy/hbbc-webpage-autodeploy.service /etc/systemd/system/
+cp /home/hbbc/hbbc_webpage/hbbc-webpage/deploy/hbbc-webpage-autodeploy.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now hbbc-webpage-autodeploy.timer
+```
+
+Check it's scheduled and see when it last ran:
+
+```bash
+systemctl list-timers hbbc-webpage-autodeploy.timer
+journalctl -u hbbc-webpage-autodeploy.service -n 50
+```
+
+It checks hourly by default (`deploy/hbbc-webpage-autodeploy.timer`). To
+ship a release: bump `CHANGELOG.md`, then from your own machine —
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The VPS deploys it on its next hourly check. To deploy immediately
+instead of waiting, run the same script the timer uses, by hand:
+
+```bash
+su - hbbc -c 'bash ~/hbbc_webpage/hbbc-webpage/deploy/04-auto-deploy.sh'
+```
+
+It's a no-op if there's no new tag, so it's always safe to run.
+
+**This changes how you ship routine updates.** Once the timer is
+enabled, prefer tagging a release over running `02-deploy.sh` by hand —
+`04-auto-deploy.sh` leaves the checkout in detached HEAD (pinned to
+whatever tag it deployed), and `02-deploy.sh`'s plain `git pull` expects
+to be on a branch. If you ever do need `02-deploy.sh` again (e.g. to
+force-deploy `main` directly), check out the branch first:
+`git checkout main`.
+
 ## Troubleshooting
 
 **`sudo: a password is required` when `02-deploy.sh` tries to restart the
