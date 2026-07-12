@@ -68,6 +68,16 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAdmin: true },
     },
     {
+        path: "/impressum",
+        name: "impressum",
+        component: () => import("../views/Impressum.vue"),
+    },
+    {
+        path: "/datenschutz",
+        name: "datenschutz",
+        component: () => import("../views/Datenschutz.vue"),
+    },
+    {
         path: "/:pathMatch(.*)*",
         name: "not-found",
         component: () => import("../views/NotFound.vue"),

@@ -45,9 +45,8 @@
                     
                     <!-- Footer legal links -->
                     <div class="flex gap-6">
-                        <a href="#" class="text-gray-500 hover:text-red-500 transition-colors text-sm">Privacy Policy</a>
-                        <a href="#" class="text-gray-500 hover:text-red-500 transition-colors text-sm">Terms of Service</a>
-                        <a href="#" class="text-gray-500 hover:text-red-500 transition-colors text-sm">Cookie Policy</a>
+                        <router-link to="/impressum" class="text-gray-500 hover:text-red-500 transition-colors text-sm">Impressum</router-link>
+                        <router-link to="/datenschutz" class="text-gray-500 hover:text-red-500 transition-colors text-sm">Datenschutz</router-link>
                     </div>
                 </div>
             </div>
