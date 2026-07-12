@@ -20,12 +20,19 @@
 
     <!-- Fanclub members: the primary hub -->
     <section v-if="activeSubTab === 'fanclub'" class="space-y-4">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-xl font-bold text-white">Fanclub-Mitglieder</h2>
         <button v-if="!showFanclubMemberForm" type="button" class="btn-animated bg-red-700 hover:bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors" @click="startCreateFanclubMember">
           + Fanclub-Mitglied hinzufügen
         </button>
       </div>
+
+      <input
+        v-model="fanclubSearchQuery"
+        type="search"
+        placeholder="Suche nach Name oder E-Mail…"
+        class="w-full rounded-md bg-gray-900/60 border border-gray-600 px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+      />
 
       <form v-if="showFanclubMemberForm" class="bg-gray-800/50 backdrop-blur rounded-lg p-6 border border-gray-500 text-left space-y-4 max-w-xl mx-auto" @submit.prevent="handleFanclubMemberSubmit">
         <h3 class="text-lg font-semibold text-white">{{ editingFanclubMemberId ? 'Fanclub-Mitglied bearbeiten' : 'Neues Fanclub-Mitglied' }}</h3>
@@ -115,8 +122,8 @@
         </div>
       </form>
 
-      <div v-if="fanclubMembers.length" class="grid gap-2.5">
-        <div v-for="fm in fanclubMembers" :key="fm.id" class="bg-gray-800/50 backdrop-blur rounded-lg px-5 py-4 border border-gray-500 text-left">
+      <div v-if="filteredFanclubMembers.length" class="grid gap-2.5">
+        <div v-for="fm in filteredFanclubMembers" :key="fm.id" class="bg-gray-800/50 backdrop-blur rounded-lg px-5 py-4 border border-gray-500 text-left">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
               <h3 class="text-white font-semibold truncate">{{ fm.name }}</h3>
@@ -153,7 +160,7 @@
         </div>
       </div>
       <div v-else-if="!showFanclubMemberForm" class="bg-gray-800/50 backdrop-blur rounded-lg p-10 border border-gray-500 text-gray-300 text-center">
-        Noch keine Fanclub-Mitglieder.
+        {{ fanclubSearchQuery.trim() ? 'Keine Fanclub-Mitglieder gefunden.' : 'Noch keine Fanclub-Mitglieder.' }}
       </div>
     </section>
 
@@ -161,8 +168,15 @@
     <section v-else class="space-y-4">
       <h2 class="text-xl font-bold text-white">HBBC Accounts</h2>
 
-      <div v-if="users.length" class="grid gap-3">
-        <div v-for="user in users" :key="user.id" class="bg-gray-800/50 backdrop-blur rounded-lg p-5 border border-gray-500 text-left">
+      <input
+        v-model="accountsSearchQuery"
+        type="search"
+        placeholder="Suche nach Name oder E-Mail…"
+        class="w-full rounded-md bg-gray-900/60 border border-gray-600 px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+      />
+
+      <div v-if="filteredUsers.length" class="grid gap-3">
+        <div v-for="user in filteredUsers" :key="user.id" class="bg-gray-800/50 backdrop-blur rounded-lg p-5 border border-gray-500 text-left">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div class="flex items-center gap-2">
@@ -201,14 +215,14 @@
         </div>
       </div>
       <div v-else class="bg-gray-800/50 backdrop-blur rounded-lg p-10 border border-gray-500 text-gray-300 text-center">
-        Keine Nutzer vorhanden.
+        {{ accountsSearchQuery.trim() ? 'Keine Nutzer gefunden.' : 'Keine Nutzer vorhanden.' }}
       </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
 import { currentUser } from '../../auth'
 
 interface User {
@@ -292,6 +306,20 @@ const formatShortDate = (dateString: string) =>
 const linkedUser = (userId: number | null) => (userId == null ? undefined : users.value.find((u) => u.id === userId))
 const cardById = (cardId: number | null) => (cardId == null ? undefined : members.value.find((m) => m.id === cardId))
 const fanclubMemberById = (id: number | null) => (id == null ? undefined : fanclubMembers.value.find((fm) => fm.id === id))
+
+const fanclubSearchQuery = ref('')
+const filteredFanclubMembers = computed(() => {
+  const q = fanclubSearchQuery.value.trim().toLowerCase()
+  if (!q) return fanclubMembers.value
+  return fanclubMembers.value.filter((fm) => fm.name.toLowerCase().includes(q) || (fm.email ?? '').toLowerCase().includes(q))
+})
+
+const accountsSearchQuery = ref('')
+const filteredUsers = computed(() => {
+  const q = accountsSearchQuery.value.trim().toLowerCase()
+  if (!q) return users.value
+  return users.value.filter((u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q))
+})
 
 const loadAll = async () => {
   try {
