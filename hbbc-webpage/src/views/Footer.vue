@@ -40,7 +40,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-center">
                     <p class="text-gray-500 text-sm mb-4 md:mb-0">
                         &copy; {{ currentYear }} HBBC. All rights reserved.
-                        <span class="text-gray-600">&middot; v{{ appVersion }}</span>
+                        <span class="text-gray-600">&middot; {{ appVersion }}</span>
                     </p>
                     
                     <!-- Footer legal links -->
