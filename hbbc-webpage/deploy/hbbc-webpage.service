@@ -1,0 +1,28 @@
+[Unit]
+Description=HBBC Fanclub website (Express + built frontend)
+After=network.target
+
+[Service]
+Type=simple
+# Dedicated non-root user created by deploy/01-server-setup.sh — the app
+# never needs root, and running it as one would be an unnecessary risk.
+User=hbbc
+Group=hbbc
+WorkingDirectory=/home/hbbc/hbbc_webpage/hbbc-webpage
+# PORT/SMTP_*/CONTACT_*/etc. are loaded by the app itself via dotenv
+# (server/index.ts: `import 'dotenv/config'`, reading .env from cwd,
+# which WorkingDirectory sets) — no need to duplicate them here.
+# NODE_ENV isn't in .env.example, so it's set explicitly.
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+RestartSec=5
+
+# Minor hardening — the app only needs to read its own directory and
+# write to server/data/ and the upload folders within it, all covered by
+# WorkingDirectory already being writable to this user.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
