@@ -31,10 +31,10 @@ const stats = computed(() => [
 
 onMounted(async () => {
   try {
-    const response = await fetch('/members/members.json')
-    const data: { member: unknown[] } = await response.json()
-    if (data.member?.length) {
-      memberCount.value = data.member.length
+    const response = await fetch('/api/fanclub-members/count')
+    const data: { count: number } = await response.json()
+    if (data.count) {
+      memberCount.value = data.count
     }
   } catch (error) {
     console.error('Failed to load member count:', error)

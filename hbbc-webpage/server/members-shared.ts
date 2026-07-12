@@ -13,9 +13,11 @@ export interface Member extends WithId {
   joined: string
   location?: string
   about_me: string
-  // References users.id (SQLite) — null/absent for a card with no linked
-  // login, which is the default for hand-authored/admin-only cards.
-  user_id?: number | null
+  // References fanclub_members.id (SQLite) — every card represents a real
+  // fanclub member, set at creation time. Whether that same fanclub member
+  // also has a login account is a separate question, resolved by checking
+  // users.fanclub_member_id rather than any direct link on the card.
+  fanclub_member_id: number
 }
 
 export const snakeCaseName = (name: string) => name.replace(/\s+/g, '_')

@@ -57,6 +57,31 @@ db.exec(`
 `)
 db.exec(`CREATE INDEX IF NOT EXISTS idx_page_views_created_at ON page_views(created_at)`)
 
+// The authoritative club-roster entity — a fanclub member can exist with
+// no account and no public card. Accounts and cards each optionally
+// reference one (see the fanclub_member_id column/field added below),
+// and no longer link directly to each other.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS fanclub_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT,
+    joined_date TEXT NOT NULL DEFAULT (date('now')),
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )
+`)
+
+// Nullable in the schema (SQLite can't cheaply add a NOT NULL column to
+// an existing table) — "an approved account must have one" is enforced
+// at the application layer, in the approval endpoint. Guarded/idempotent
+// like newsletter_subscribed above.
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN fanclub_member_id INTEGER REFERENCES fanclub_members(id)`)
+} catch {
+  // column already present
+}
+
 export type Role = 'member' | 'admin'
 export type AccountStatus = 'pending' | 'approved' | 'rejected'
 
@@ -70,6 +95,7 @@ export interface UserRow {
   message: string | null
   created_at: string
   newsletter_subscribed: number
+  fanclub_member_id: number | null
 }
 
 // Never send password_hash to the client — this is what request handlers
@@ -82,6 +108,7 @@ export interface PublicUser {
   status: AccountStatus
   created_at: string
   newsletterSubscribed: boolean
+  fanclubMemberId: number | null
 }
 
 export function toPublicUser(row: UserRow): PublicUser {
@@ -93,5 +120,6 @@ export function toPublicUser(row: UserRow): PublicUser {
     status: row.status,
     created_at: row.created_at,
     newsletterSubscribed: Boolean(row.newsletter_subscribed),
+    fanclubMemberId: row.fanclub_member_id,
   }
 }

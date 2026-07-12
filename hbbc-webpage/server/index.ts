@@ -17,6 +17,8 @@ import analyticsRouter from './routes/analytics.js'
 import adminNewsRouter from './routes/admin-news.js'
 import newsRouter from './routes/news.js'
 import membersRouter from './routes/members.js'
+import adminFanclubMembersRouter from './routes/admin-fanclub-members.js'
+import fanclubMembersRouter from './routes/fanclub-members.js'
 import eventsRouter from './routes/events.js'
 import vfbMatchesRouter from './routes/vfb-matches.js'
 import galleryRouter from './routes/gallery.js'
@@ -24,6 +26,7 @@ import downloadsRouter from './routes/downloads.js'
 import profileRouter from './routes/profile.js'
 import { attachUser, requireAdmin, requireAuth } from './auth/middleware.js'
 import { migrateLegacyNewsletterSubscribers } from './newsletter-migration.js'
+import { migrateFanclubMembers } from './fanclub-member-migration.js'
 
 const app = express()
 const port = Number(process.env.PORT) || 3001
@@ -61,6 +64,9 @@ app.use('/api/admin/users', requireAdmin, adminUsersRouter)
 app.use('/api/admin/newsletter', requireAdmin, adminNewsletterRouter)
 app.use('/api/admin/analytics', requireAdmin, adminAnalyticsRouter)
 app.use('/api/admin/news', requireAdmin, adminNewsRouter)
+app.use('/api/admin/fanclub-members', requireAdmin, adminFanclubMembersRouter)
+// Public on purpose — just a count, no personal data (see the route itself).
+app.use('/api/fanclub-members', fanclubMembersRouter)
 // Public on purpose — anonymous visitors get counted too, not just logged-in members.
 app.use('/api/analytics', pageviewLimiter, analyticsRouter)
 // Public on purpose — news articles are announcements meant for all visitors, not just members.
@@ -99,6 +105,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 await migrateLegacyNewsletterSubscribers()
+await migrateFanclubMembers()
 
 app.listen(port, () => {
   console.log(`[server] listening on http://localhost:${port}`)

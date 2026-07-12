@@ -28,14 +28,32 @@ router.get('/', async (_req, res) => {
 })
 
 router.post('/', memberPictureUpload.single('picture'), async (req, res) => {
-  const { name, role, joined, location, about_me } = req.body ?? {}
+  const { name, role, joined, location, about_me, fanclub_member_id: fanclubMemberIdRaw } = req.body ?? {}
+  const fanclubMemberId = Number(fanclubMemberIdRaw)
 
-  if (!isNonEmptyString(name, 100) || !isNonEmptyString(role, 100) || !isNonEmptyString(joined, 20) || !isNonEmptyString(about_me, 2000)) {
-    res.status(400).json({ error: 'Bitte Name, Rolle, Beitrittsdatum und Beschreibung angeben.' })
+  if (
+    !isNonEmptyString(name, 100) ||
+    !isNonEmptyString(role, 100) ||
+    !isNonEmptyString(joined, 20) ||
+    !isNonEmptyString(about_me, 2000) ||
+    !Number.isInteger(fanclubMemberId)
+  ) {
+    if (req.file) await deleteExistingPicture(name).catch(() => {})
+    res.status(400).json({ error: 'Bitte Name, Rolle, Beitrittsdatum, Beschreibung und Fanclub-Mitglied angeben.' })
+    return
+  }
+
+  const fanclubMemberExists = db.prepare('SELECT id FROM fanclub_members WHERE id = ?').get(fanclubMemberId)
+  if (!fanclubMemberExists) {
+    res.status(404).json({ error: 'Fanclub-Mitglied nicht gefunden.' })
     return
   }
 
   const members = await readCollection<Member>(membersFile, 'member')
+  if (members.some((m) => m.fanclub_member_id === fanclubMemberId)) {
+    res.status(409).json({ error: 'Dieses Fanclub-Mitglied hat bereits eine Mitgliederkarte.' })
+    return
+  }
   const nextId = Math.max(0, ...members.map((m) => m.id)) + 1
 
   const member: Member = {
@@ -44,6 +62,7 @@ router.post('/', memberPictureUpload.single('picture'), async (req, res) => {
     role,
     joined,
     about_me,
+    fanclub_member_id: fanclubMemberId,
     ...(location ? { location } : {}),
   }
 
@@ -83,14 +102,16 @@ router.put('/:id', memberPictureUpload.single('picture'), async (req, res) => {
     removePicture: removePicture === 'true' || removePicture === 'on',
   })
 
+  // The fanclub member link is set once at creation, not editable here —
+  // a card's identity *is* the fanclub member it represents.
   const updated: Member = {
     id,
     name,
     role,
     joined,
     about_me,
+    fanclub_member_id: existing.fanclub_member_id,
     ...(location ? { location } : {}),
-    ...(existing.user_id != null ? { user_id: existing.user_id } : {}),
   }
   members[index] = updated
 
@@ -116,45 +137,6 @@ router.delete('/:id', async (req, res) => {
   await deleteExistingPicture(removed.name)
   await writeCollection(membersFile, 'member', members)
   res.json({ ok: true })
-})
-
-// Admin-only: attach or detach a card to/from a user account.
-router.put('/:id/link', async (req, res) => {
-  const id = Number(req.params.id)
-  if (!Number.isInteger(id)) {
-    res.status(400).json({ error: 'Ungültige Mitglieds-ID.' })
-    return
-  }
-
-  const { user_id: userId } = req.body ?? {}
-  if (userId !== null && !Number.isInteger(userId)) {
-    res.status(400).json({ error: 'Ungültige Nutzer-ID.' })
-    return
-  }
-
-  const members = await readCollection<Member>(membersFile, 'member')
-  const index = members.findIndex((m) => m.id === id)
-  if (index === -1) {
-    res.status(404).json({ error: 'Mitglied nicht gefunden.' })
-    return
-  }
-
-  if (userId !== null) {
-    const userExists = db.prepare('SELECT id FROM users WHERE id = ?').get(userId)
-    if (!userExists) {
-      res.status(404).json({ error: 'Nutzer nicht gefunden.' })
-      return
-    }
-    const alreadyLinked = members.some((m) => m.id !== id && m.user_id === userId)
-    if (alreadyLinked) {
-      res.status(409).json({ error: 'Dieser Nutzer ist bereits mit einer anderen Karte verknüpft.' })
-      return
-    }
-  }
-
-  members[index] = { ...members[index], user_id: userId }
-  await writeCollection(membersFile, 'member', members)
-  res.json({ ok: true, member: members[index] })
 })
 
 export default router

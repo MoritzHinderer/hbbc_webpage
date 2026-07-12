@@ -10,8 +10,9 @@ const router = Router()
 const todayIso = () => new Date().toISOString().slice(0, 10)
 
 router.get('/member', async (req, res) => {
+  const fanclubMemberId = req.user!.fanclubMemberId
   const members = await readCollection<Member>(membersFile, 'member')
-  const mine = members.find((m) => m.user_id === req.user!.id)
+  const mine = fanclubMemberId != null ? members.find((m) => m.fanclub_member_id === fanclubMemberId) : undefined
   if (!mine) {
     res.json({ member: null })
     return
@@ -24,6 +25,14 @@ router.get('/member', async (req, res) => {
 })
 
 router.post('/member', memberPictureUpload.single('picture'), async (req, res) => {
+  const fanclubMemberId = req.user!.fanclubMemberId
+  if (fanclubMemberId == null) {
+    // Shouldn't happen for an approved account (every approve path sets
+    // this), but guard rather than silently create an orphaned card.
+    res.status(409).json({ error: 'Deinem Konto ist kein Fanclub-Mitglied zugeordnet. Bitte einen Admin kontaktieren.' })
+    return
+  }
+
   const { name, location, about_me } = req.body ?? {}
 
   if (!isNonEmptyString(name, 100) || !isNonEmptyString(about_me, 2000)) {
@@ -32,7 +41,7 @@ router.post('/member', memberPictureUpload.single('picture'), async (req, res) =
   }
 
   const members = await readCollection<Member>(membersFile, 'member')
-  if (members.some((m) => m.user_id === req.user!.id)) {
+  if (members.some((m) => m.fanclub_member_id === fanclubMemberId)) {
     res.status(409).json({ error: 'Du hast bereits eine Mitgliederkarte.' })
     return
   }
@@ -45,7 +54,7 @@ router.post('/member', memberPictureUpload.single('picture'), async (req, res) =
     joined: todayIso(),
     about_me,
     ...(location ? { location } : {}),
-    user_id: req.user!.id,
+    fanclub_member_id: fanclubMemberId,
   }
 
   await applyPictureChange({ newName: name, uploadedFile: req.file })
@@ -56,8 +65,9 @@ router.post('/member', memberPictureUpload.single('picture'), async (req, res) =
 })
 
 router.put('/member', memberPictureUpload.single('picture'), async (req, res) => {
+  const fanclubMemberId = req.user!.fanclubMemberId
   const members = await readCollection<Member>(membersFile, 'member')
-  const index = members.findIndex((m) => m.user_id === req.user!.id)
+  const index = fanclubMemberId != null ? members.findIndex((m) => m.fanclub_member_id === fanclubMemberId) : -1
   if (index === -1) {
     res.status(404).json({ error: 'Du hast noch keine Mitgliederkarte.' })
     return
@@ -92,8 +102,9 @@ router.put('/member', memberPictureUpload.single('picture'), async (req, res) =>
 })
 
 router.delete('/member', async (req, res) => {
+  const fanclubMemberId = req.user!.fanclubMemberId
   const members = await readCollection<Member>(membersFile, 'member')
-  const index = members.findIndex((m) => m.user_id === req.user!.id)
+  const index = fanclubMemberId != null ? members.findIndex((m) => m.fanclub_member_id === fanclubMemberId) : -1
   if (index === -1) {
     res.status(404).json({ error: 'Du hast noch keine Mitgliederkarte.' })
     return

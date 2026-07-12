@@ -23,9 +23,53 @@ router.post('/requests/:id/approve', async (req, res) => {
     return
   }
 
+  const pending = db.prepare(`SELECT * FROM users WHERE id = ? AND status = 'pending'`).get(id) as
+    | UserRow
+    | undefined
+  if (!pending) {
+    res.status(404).json({ error: 'Anfrage nicht gefunden oder bereits bearbeitet.' })
+    return
+  }
+
+  // Every approved account must reference a fanclub member — either an
+  // existing one the admin picked, or a new one auto-created from the
+  // request's own name/email.
+  const { fanclub_member_id: providedId } = req.body ?? {}
+  let fanclubMemberId: number
+
+  if (providedId !== undefined && providedId !== null) {
+    if (!Number.isInteger(providedId)) {
+      res.status(400).json({ error: 'Ungültige Fanclub-Mitglieds-ID.' })
+      return
+    }
+    const fanclubMember = db.prepare('SELECT id FROM fanclub_members WHERE id = ?').get(providedId)
+    if (!fanclubMember) {
+      res.status(404).json({ error: 'Fanclub-Mitglied nicht gefunden.' })
+      return
+    }
+    const alreadyLinked = db
+      .prepare('SELECT id FROM users WHERE fanclub_member_id = ? AND id != ?')
+      .get(providedId, id)
+    if (alreadyLinked) {
+      res.status(409).json({ error: 'Dieses Fanclub-Mitglied ist bereits mit einem anderen Konto verknüpft.' })
+      return
+    }
+    fanclubMemberId = providedId
+  } else if (pending.fanclub_member_id != null) {
+    // Already has one — e.g. backfilled by the fanclub-member migration
+    // for accounts that predate it, pending or not. Reuse it rather than
+    // creating a duplicate and orphaning the original.
+    fanclubMemberId = pending.fanclub_member_id
+  } else {
+    const created = db
+      .prepare('INSERT INTO fanclub_members (name, email) VALUES (?, ?)')
+      .run(pending.name, pending.email)
+    fanclubMemberId = Number(created.lastInsertRowid)
+  }
+
   const result = db
-    .prepare(`UPDATE users SET status = 'approved' WHERE id = ? AND status = 'pending'`)
-    .run(id)
+    .prepare(`UPDATE users SET status = 'approved', fanclub_member_id = ? WHERE id = ? AND status = 'pending'`)
+    .run(fanclubMemberId, id)
 
   if (result.changes === 0) {
     res.status(404).json({ error: 'Anfrage nicht gefunden oder bereits bearbeitet.' })

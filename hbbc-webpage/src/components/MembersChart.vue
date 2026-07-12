@@ -9,45 +9,29 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import Chart from 'chart.js/auto'
 
-interface Member {
-  joined: string
-}
-
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chart: Chart | null = null
 
 const generateMembershipData = async () => {
-  // Fetch actual member data
-  let members: Member[] = []
+  // Six cumulative fanclub-member counts (oldest to newest) — the server
+  // does the date bucketing so no per-member join dates are exposed.
+  let counts: number[] = [0, 0, 0, 0, 0, 0]
   try {
-    const response = await fetch('/api/members')
+    const response = await fetch('/api/fanclub-members/growth')
     const data = await response.json()
-    members = data.member || []
+    if (Array.isArray(data.counts)) counts = data.counts
   } catch (error) {
-    console.error('Failed to load members:', error)
+    console.error('Failed to load fanclub member growth:', error)
   }
 
-  // Get last 6 months
   const months: string[] = []
-  const data: number[] = []
   const today = new Date()
-
   for (let i = 5; i >= 0; i--) {
     const monthDate = new Date(today.getFullYear(), today.getMonth() - i, 1)
-    const monthLabel = monthDate.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' })
-    months.push(monthLabel)
-
-    // Count members who joined by the end of this month
-    const monthEndDate = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0, 23, 59, 59)
-    const memberCount = members.filter(member => {
-      const joinDate = new Date(member.joined)
-      return joinDate <= monthEndDate
-    }).length
-
-    data.push(memberCount)
+    months.push(monthDate.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }))
   }
 
-  return { months, data }
+  return { months, data: counts }
 }
 
 onMounted(async () => {

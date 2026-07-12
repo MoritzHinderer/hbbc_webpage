@@ -73,7 +73,7 @@ const goTo = (index: number) => {
 
 onMounted(async () => {
   try {
-    const response = await fetch('/members/members.json')
+    const response = await fetch('/api/members')
     const data: { member: Testimonial[] } = await response.json()
     testimonials.value = data.member || []
   } catch (error) {
