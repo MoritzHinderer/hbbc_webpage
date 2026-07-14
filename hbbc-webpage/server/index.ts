@@ -24,6 +24,7 @@ import vfbMatchesRouter from './routes/vfb-matches.js'
 import galleryRouter from './routes/gallery.js'
 import downloadsRouter from './routes/downloads.js'
 import profileRouter from './routes/profile.js'
+import impressumRouter from './routes/impressum.js'
 import { attachUser, requireAdmin, requireAuth } from './auth/middleware.js'
 import { migrateLegacyNewsletterSubscribers } from './newsletter-migration.js'
 import { migrateFanclubMembers } from './fanclub-member-migration.js'
@@ -83,6 +84,9 @@ app.use('/api/vfb-matches', vfbMatchesRouter)
 app.use('/api/gallery', requireAuth, galleryRouter)
 // Not blanket-gated — each file's requiresAuth flag decides individually.
 app.use('/api/downloads', downloadsRouter)
+// Public on purpose — an Impressum has to be publicly visible by law. Only
+// the identity/address data itself is kept out of git (see .env.example).
+app.use('/api/impressum', impressumRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true })

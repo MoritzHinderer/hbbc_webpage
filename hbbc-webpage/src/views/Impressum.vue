@@ -12,37 +12,51 @@
           </p>
         </section>
 
-        <section>
+        <section v-if="!loaded"></section>
+        <section v-else-if="!impressum?.configured">
           <h2 class="text-lg font-semibold text-white mb-2">Anschrift</h2>
           <p class="border border-dashed border-amber-500/60 bg-amber-500/10 text-amber-200 rounded-md p-4">
-            Platzhalter
+            ⚠ Nicht konfiguriert — der Betreiber muss
+            <code>IMPRESSUM_NAME</code>/<code>IMPRESSUM_ADDRESS_LINE1</code>/<code>IMPRESSUM_ADDRESS_LINE2</code>
+            in der Server-<code>.env</code> setzen. Diese Seite darf erst live gehen, wenn diese Angaben vorhanden sind
+            — ohne sie ist das Impressum rechtlich unvollständig.
           </p>
         </section>
+        <template v-else>
+          <section>
+            <h2 class="text-lg font-semibold text-white mb-2">Anschrift</h2>
+            <p>
+              {{ impressum!.name }}<br />
+              <template v-for="line in impressum!.addressLines" :key="line">{{ line }}<br /></template>
+            </p>
+          </section>
 
-        <section>
-          <h2 class="text-lg font-semibold text-white mb-2">Vertreten durch</h2>
-          <p class="border border-dashed border-amber-500/60 bg-amber-500/10 text-amber-200 rounded-md p-4">
-            Platzhalter
-          </p>
-        </section>
+          <section>
+            <h2 class="text-lg font-semibold text-white mb-2">Vertreten durch</h2>
+            <p>{{ impressum!.name }}</p>
+          </section>
 
-        <section>
-          <h2 class="text-lg font-semibold text-white mb-2">Kontakt</h2>
-          <p>
-            E-Mail:
-            <a href="mailto:info@hbbc-fanclub.de" class="text-red-400 hover:text-red-300">info@hbbc-fanclub.de</a>
-          </p>
-        </section>
+          <section>
+            <h2 class="text-lg font-semibold text-white mb-2">Kontakt</h2>
+            <p>
+              E-Mail:
+              <a href="mailto:info@hbbc-fanclub.de" class="text-red-400 hover:text-red-300">info@hbbc-fanclub.de</a
+              ><template v-if="impressum!.phone"
+                ><br />
+                Telefon:
+                <a :href="impressum!.phoneHref!" class="text-red-400 hover:text-red-300">{{ impressum!.phone }}</a>
+              </template>
+            </p>
+          </section>
 
-        <section>
-          <h2 class="text-lg font-semibold text-white mb-2">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
-          <p>
-            <p class="border border-dashed border-amber-500/60 bg-amber-500/10 text-amber-200 rounded-md p-4">
-            Platzhalter
-          </p>
-            Anschrift wie oben
-          </p>
-        </section>
+          <section>
+            <h2 class="text-lg font-semibold text-white mb-2">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+            <p>
+              {{ impressum!.name }}<br />
+              Anschrift wie oben
+            </p>
+          </section>
+        </template>
 
         <section>
           <h2 class="text-lg font-semibold text-white mb-2">Haftung für Inhalte</h2>
@@ -97,3 +111,30 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+
+interface ImpressumData {
+  configured: boolean
+  name: string | null
+  addressLines: string[]
+  phone: string | null
+  phoneHref: string | null
+}
+
+const impressum = ref<ImpressumData | null>(null)
+const loaded = ref(false)
+
+onMounted(async () => {
+  try {
+    const response = await fetch('/api/impressum')
+    impressum.value = await response.json()
+  } catch (error) {
+    console.error('Failed to load Impressum data:', error)
+    impressum.value = { configured: false, name: null, addressLines: [], phone: null, phoneHref: null }
+  } finally {
+    loaded.value = true
+  }
+})
+</script>
