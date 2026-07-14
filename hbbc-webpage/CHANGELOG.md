@@ -18,6 +18,16 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-14
+
+Replaced the Impressum/Datenschutzerklärung address and "vertreten durch"
+placeholders with real data (closes #2). The real name/address/phone live
+only in `.env` (never in git) and are served through a new public
+`GET /api/impressum` endpoint, the same pattern already used for SMTP/
+contact config — so no personal data ends up in the repo's commit
+history. Also fixed invalid nested `<p>` markup left over from an
+earlier manual edit.
+
 ## [0.1.1] - 2026-07-12
 
 Fixed double "v" in verison tag in footer

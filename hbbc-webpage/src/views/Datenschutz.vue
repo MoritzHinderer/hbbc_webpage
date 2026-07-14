@@ -11,7 +11,7 @@
           </p>
           <p class="mt-2">
             Hamburger Böblinger Banausenchor und VFB Fanclub OFC<br />
-            vertreten durch Platzhalter<br />
+            vertreten durch {{ representativeName }}<br />
             E-Mail:
             <a href="mailto:info@hbbc-fanclub.de" class="text-red-400 hover:text-red-300">info@hbbc-fanclub.de</a>
           </p>
@@ -105,3 +105,21 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+
+// Same source as Impressum.vue — real identity data lives only in .env,
+// never in git (see server/routes/impressum.ts).
+const representativeName = ref('(siehe Impressum)')
+
+onMounted(async () => {
+  try {
+    const response = await fetch('/api/impressum')
+    const data = await response.json()
+    if (data.configured && data.name) representativeName.value = data.name
+  } catch (error) {
+    console.error('Failed to load Impressum data:', error)
+  }
+})
+</script>
