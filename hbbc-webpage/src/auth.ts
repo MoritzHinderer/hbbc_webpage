@@ -65,3 +65,11 @@ export async function logout(): Promise<void> {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
   currentUser.value = null
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+  await postJson('/api/auth/forgot-password', { email })
+}
+
+export async function resetPassword(token: string, password: string): Promise<void> {
+  await postJson('/api/auth/reset-password', { token, password })
+}

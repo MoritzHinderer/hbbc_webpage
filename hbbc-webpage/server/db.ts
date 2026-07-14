@@ -29,6 +29,18 @@ db.exec(`
   )
 `)
 
+// Single-use, short-lived tokens for the "forgot password" flow — mirrors
+// sessions above, but with a much shorter expiry (set by the route, not
+// here) since this only needs to survive the trip to the inbox.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    expires_at TEXT NOT NULL
+  )
+`)
+
 // users predates this column — ALTER TABLE ... ADD COLUMN fails if it
 // already exists, so this is a guarded one-time migration, safe to run on
 // every startup.
