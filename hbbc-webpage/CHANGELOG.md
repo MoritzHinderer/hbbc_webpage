@@ -18,6 +18,18 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-17
+
+Phase 1 of automated testing + CI (progress on #7, not yet closed — see
+the issue for the phased roadmap toward >90% coverage). Vitest for
+backend (45 tests: password/session/validation units, register/login/
+forgot-password and one representative admin-CRUD route as supertest
+integration tests) and frontend (8 component tests), plus a small
+Playwright e2e suite (6 tests) covering login, the full forgot-password
+flow, and navigation/404. New GitHub Actions CI pipeline runs all of it
+on every push and PR — coverage is reported, not a merge-blocking gate,
+since it's climbing from zero rather than already near the target.
+
 ## [0.3.0] - 2026-07-17
 
 Added a "CSV exportieren" button to the Fanclub-Mitglieder admin tab

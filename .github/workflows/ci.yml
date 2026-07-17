@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+defaults:
+  run:
+    working-directory: hbbc-webpage
+
+jobs:
+  test:
+    name: Build, typecheck, unit + integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: hbbc-webpage/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (typecheck + production bundle)
+        run: npm run build
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      # Coverage is reported, not a merge-blocking gate — the suite is
+      # Phase 1 of working toward >90% (see issue #7), not there yet.
+      # Failing the build on that threshold now would just keep CI
+      # permanently red instead of usefully signaling anything.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: hbbc-webpage/coverage/
+          retention-days: 14
+
+  e2e:
+    name: End-to-end tests (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: hbbc-webpage/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # No SMTP/IMPRESSUM secrets needed: server/mailer.ts's
+      # mailerConfigured check makes mail-sending routes no-op (log
+      # instead of send) when SMTP_* is unset, exactly like local dev
+      # without a .env — the e2e suite never needs real credentials.
+      - name: Run e2e tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: hbbc-webpage/test-results/
+          retention-days: 14
