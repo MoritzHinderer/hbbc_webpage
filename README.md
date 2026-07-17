@@ -58,10 +58,7 @@ See [`deploy/README.md`](hbbc-webpage/deploy/README.md) for VPS setup and shippi
 
 ## Contributors
 
-- Joshua Hörtkorn (Vorsitzender)
 - Moritz Hinderer (Stellvertretender Vorsitzender)
-- Paul Otto Georg Lussier (Kassenwart)
-- Roman Güven (Schriftführer)
 
 ## License
 
