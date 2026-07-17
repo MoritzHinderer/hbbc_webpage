@@ -28,7 +28,10 @@
         </div>
 
         <div>
-          <label for="password" class="block text-sm font-medium text-gray-300 mb-2">Passwort</label>
+          <div class="flex items-center justify-between mb-2">
+            <label for="password" class="block text-sm font-medium text-gray-300">Passwort</label>
+            <router-link to="/forgot-password" class="text-sm text-red-400 hover:text-red-300">Passwort vergessen?</router-link>
+          </div>
           <input
             id="password"
             v-model="password"

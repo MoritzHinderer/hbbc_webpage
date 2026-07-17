@@ -18,6 +18,16 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-14
+
+Added a "forgot password" self-service flow (closes #1): a "Passwort
+vergessen?" link on `/login` leads to `/forgot-password` (request a reset
+link by email, always shows the same confirmation regardless of whether
+the email matches an account) and `/reset-password?token=...` (set a new
+password). Resetting invalidates every existing session for that
+account and sends a "your password was just changed" notification
+email. Reset links are single-use and expire after 30 minutes.
+
 ## [0.1.2] - 2026-07-14
 
 Replaced the Impressum/Datenschutzerklärung address and "vertreten durch"
