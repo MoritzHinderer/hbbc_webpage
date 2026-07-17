@@ -10,7 +10,12 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "start": "NODE_ENV=production tsx server/index.ts",
-    "create-admin": "tsx server/scripts/create-admin.ts"
+    "create-admin": "tsx server/scripts/create-admin.ts",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test:server": "vitest run --config vitest.server.config.ts",
+    "test": "npm run test:unit && npm run test:server",
+    "test:coverage": "npm run test:unit -- --coverage && npm run test:server -- --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",

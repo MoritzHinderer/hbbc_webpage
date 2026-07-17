@@ -10,6 +10,20 @@ import { isNonEmptyString, isValidEmail, isValidPassword } from '../validation.j
 
 const router = Router()
 
+// The automated test suite legitimately makes far more requests per run
+// than any real user would in 15 minutes (many register/login/forgot-
+// password calls across many test cases, all from the same in-process
+// "IP") — without this, later tests in a file get silently 429'd instead
+// of exercising the actual route logic. Keyed off DB_PATH rather than
+// NODE_ENV since the e2e suite runs against a real production build
+// (NODE_ENV=production, for a real static bundle with none of the dev
+// server's dependency-pre-bundling races) but still needs an isolated
+// test database — DB_PATH is set in exactly those isolated-DB cases
+// (vitest.server.config.ts, playwright.config.ts) and never in a real
+// deployment, so it's the one signal that actually means "this is a test
+// run" regardless of which server mode is active.
+const isTestEnv = Boolean(process.env.DB_PATH)
+
 // Only register/login are rate-limited — /me is polled on every page
 // load/navigation by the frontend, so it must not share this budget.
 // Login and register get separate budgets: mistyped passwords are normal
@@ -17,14 +31,14 @@ const router = Router()
 // harder since each one emails the admin.
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 30,
+  limit: isTestEnv ? 100000 : 30,
   standardHeaders: true,
   legacyHeaders: false,
 })
 
 const registerLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 5,
+  limit: isTestEnv ? 100000 : 5,
   standardHeaders: true,
   legacyHeaders: false,
 })
@@ -34,7 +48,7 @@ const registerLimiter = rateLimit({
 // same budget class as registration.
 const forgotPasswordLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 5,
+  limit: isTestEnv ? 100000 : 5,
   standardHeaders: true,
   legacyHeaders: false,
 })
