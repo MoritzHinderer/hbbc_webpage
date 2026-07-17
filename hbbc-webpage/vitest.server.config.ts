@@ -1,4 +1,11 @@
+import path from 'node:path'
 import { defineConfig } from 'vitest/config'
+
+// A real, writable, isolated directory — not a nonexistent path — since
+// admin CRUD tests need to actually create/update/delete content JSON
+// files (server/content-store.ts's writeCollection doesn't create parent
+// directories). Lives under server/data/, already gitignored.
+const TEST_CONTENT_DIR = path.join(process.cwd(), 'server', 'data', 'test-content')
 
 // Backend route/unit tests (real Node, no DOM). Mirrors tsconfig.server.json's
 // scope — see vitest.config.ts for the frontend counterpart.
@@ -6,6 +13,11 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['server/**/*.test.ts'],
+    setupFiles: ['./server/test-setup.ts'],
+    // Test files share one real, on-disk CONTENT_DIR/PUBLIC_DIR (unlike
+    // the DB, which is a true per-file :memory: instance) — running them
+    // in parallel would let two files race writes to the same directory.
+    fileParallelism: false,
     env: {
       // Every test file gets its own isolated in-memory DB (see
       // server/db.ts's DB_PATH support) — never the real server/data/app.db.
@@ -16,13 +28,14 @@ export default defineConfig({
       // register/login/forgot-password calls in a row doesn't get silently
       // 429'd partway through.
       DB_PATH: ':memory:',
-      // Points at a path that doesn't exist, so readCollection() resolves it
-      // to an empty list (server/content-store.ts) — keeps a fresh in-memory
-      // fanclub_members row from ever colliding with a real card's
-      // fanclub_member_id in the actual server/content/members.json. Tests
-      // never call the member-card mutation endpoints, so nothing is ever
-      // written to this path either.
-      MEMBERS_FILE: '/tmp/hbbc-test-members-does-not-exist.json',
+      // Isolates every content file/upload path (members, events, news,
+      // gallery, downloads — see server/content-store.ts's CONTENT_DIR)
+      // from the real server/content/. Without this, admin CRUD tests for
+      // those routes would read and write the actual live site content.
+      CONTENT_DIR: TEST_CONTENT_DIR,
+      // Same idea for the one thing that lives under public/ instead —
+      // the downloads manifest is git-tracked, real, committed content.
+      PUBLIC_DIR: path.join(TEST_CONTENT_DIR, 'public'),
       // app.ts does `import 'dotenv/config'`, which loads the real local
       // .env if one exists — but dotenv never overrides a variable that's
       // already set in process.env, so setting these blank here (applied

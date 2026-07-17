@@ -1,13 +1,13 @@
 import { Router } from 'express'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import { readCollection, writeCollection, type WithId } from '../content-store.js'
+import { contentDir, publicDir, readCollection, writeCollection, type WithId } from '../content-store.js'
 import { downloadFileUpload } from '../uploads.js'
 import { isNonEmptyString } from '../validation.js'
 
 const router = Router()
-const downloadsFile = path.join(process.cwd(), 'public', 'downloads', 'downloads.json')
-const downloadsDir = path.join(process.cwd(), 'server', 'content', 'downloads')
+const downloadsFile = path.join(publicDir, 'downloads', 'downloads.json')
+const downloadsDir = path.join(contentDir, 'downloads')
 
 export interface Download extends WithId {
   name: string

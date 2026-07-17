@@ -1,11 +1,11 @@
 import { Router } from 'express'
 import path from 'node:path'
-import { readCollection } from '../content-store.js'
+import { contentDir, publicDir, readCollection } from '../content-store.js'
 import { hrefToFilename, type Download } from './admin-downloads.js'
 
 const router = Router()
-const downloadsFile = path.join(process.cwd(), 'public', 'downloads', 'downloads.json')
-const downloadsDir = path.join(process.cwd(), 'server', 'content', 'downloads')
+const downloadsFile = path.join(publicDir, 'downloads', 'downloads.json')
+const downloadsDir = path.join(contentDir, 'downloads')
 
 const isSafeFilename = (file: string) => /^[\w.-]+$/.test(file)
 
