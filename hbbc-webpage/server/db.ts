@@ -2,10 +2,16 @@ import { DatabaseSync } from 'node:sqlite'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const dataDir = path.join(process.cwd(), 'server', 'data')
-fs.mkdirSync(dataDir, { recursive: true })
+// DB_PATH lets tests point this at an isolated database (":memory:") so
+// they never touch the real server/data/app.db — unset in normal
+// dev/production use, where it falls back to the real on-disk path.
+const dbPath = process.env.DB_PATH
+if (!dbPath) {
+  const dataDir = path.join(process.cwd(), 'server', 'data')
+  fs.mkdirSync(dataDir, { recursive: true })
+}
 
-export const db = new DatabaseSync(path.join(dataDir, 'app.db'))
+export const db = new DatabaseSync(dbPath || path.join(process.cwd(), 'server', 'data', 'app.db'))
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
