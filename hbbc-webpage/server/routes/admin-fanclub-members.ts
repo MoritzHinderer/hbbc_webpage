@@ -32,6 +32,39 @@ function validateInput(body: Record<string, unknown>): string | null {
   return null
 }
 
+// CSV has zero styling capability (no colors/fonts/logo) regardless of
+// what opens it — "branding" here just means a text banner line above
+// the real header row, per the user's explicit choice when asked.
+function escapeCsvField(value: string): string {
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`
+  }
+  return value
+}
+
+router.get('/export.csv', (_req, res) => {
+  const fanclubMembers = db
+    .prepare('SELECT name, email, joined_date, notes FROM fanclub_members ORDER BY name')
+    .all() as unknown as { name: string; email: string | null; joined_date: string; notes: string | null }[]
+
+  const today = new Date().toISOString().slice(0, 10)
+  const lines = [
+    escapeCsvField(`HBBC Fanclub-Mitglieder — Export vom ${today}`),
+    '',
+    ['Name', 'E-Mail', 'Mitglied seit', 'Notizen'].join(','),
+    ...fanclubMembers.map((m) => [m.name, m.email ?? '', m.joined_date, m.notes ?? ''].map(escapeCsvField).join(',')),
+  ]
+
+  // Leading BOM so Excel (which guesses encoding without one) renders
+  // umlauts correctly instead of mangling them; \r\n per RFC 4180.
+  const BOM = '﻿'
+  const csv = BOM + lines.join('\r\n')
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+  res.setHeader('Content-Disposition', `attachment; filename="hbbc-fanclub-mitglieder-${today}.csv"`)
+  res.send(csv)
+})
+
 router.get('/', async (_req, res) => {
   const fanclubMembers = db.prepare('SELECT * FROM fanclub_members ORDER BY name').all() as unknown as FanclubMemberRow[]
 

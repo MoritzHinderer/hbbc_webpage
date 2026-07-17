@@ -18,6 +18,13 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-17
+
+Added a "CSV exportieren" button to the Fanclub-Mitglieder admin tab
+(closes #8): downloads every fanclub member's name/email/joined-date/
+notes as a plain CSV, with a text banner line and UTF-8 BOM so Excel
+opens umlauts correctly.
+
 ## [0.2.0] - 2026-07-14
 
 Added a "forgot password" self-service flow (closes #1): a "Passwort
