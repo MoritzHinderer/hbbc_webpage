@@ -183,6 +183,18 @@ const heroTextRef = ref<HTMLElement | null>(null)
 const heroTextClearance = 24 // minimum gap kept above the "Willkommen beim" heading
 const logoScaleCorrectionFactor = ref(1)
 
+// Cached rather than read live inside handleScroll(): iOS/iPadOS Safari's
+// collapsible toolbar animates window.innerHeight over the course of an
+// ordinary scroll gesture (not just overscroll), and handleScroll() fires
+// on every 'scroll' event — reading window.innerHeight fresh each time
+// made the progress ratio (and therefore the logo's scale/position) a
+// moving target against a denominator that was itself still changing,
+// which is what made the logo's size swing unpredictably with scroll
+// depth even after the overscroll bounce itself was fixed. Only updated
+// on resize (see onResize below), which already accounts for the
+// toolbar's height changes (see the listener comment in onMounted).
+const viewportHeight = ref(window.innerHeight)
+
 // Computed once — at rest (progress=0), the logo's largest and therefore
 // riskiest size — rather than every scroll frame. Both the scale and
 // translateY formulas move monotonically from this resting state toward
@@ -261,14 +273,14 @@ const handleScroll = async () => {
     // trackwheels never produce a negative scrollY, so this floor is a
     // no-op there.
     const scrollY = Math.max(window.scrollY, 0)
-    const heroHeight = window.innerHeight
+    const heroHeight = viewportHeight.value
     const progress = Math.min(scrollY / (heroHeight * 0.5), 1)
 
     // scale interpolation
     logoScale.value = (initialScale - (initialScale - finalScale) * progress) * logoScaleCorrectionFactor.value
 
     // translateY interpolation (center → top)
-    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 160
+    const centerY = viewportHeight.value / 2 - logoBaseHeight / 2 - 160
     logoTranslateY.value = centerY + (finalTopOffset - centerY) * progress
 
     // schal scale: grows from 1.7 to 2.6 as you scroll
@@ -320,6 +332,7 @@ const onResize = () => {
     if (resizeTicking) return
     resizeTicking = true
     requestAnimationFrame(() => {
+        viewportHeight.value = window.innerHeight
         computeLogoScaleCorrectionFactor().then(handleScroll)
         resizeTicking = false
     })

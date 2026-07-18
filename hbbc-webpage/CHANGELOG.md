@@ -33,10 +33,22 @@ persisted (tracking the bounce smoothly rather than jumping — pointing
 at the browser's live bounce rendering itself, not just the JS math).
 Second fix: `overscroll-behavior-y: none` on `html`/`body` disables the
 elastic bounce outright (supported since Safari 16), sidestepping the
-question of what `scrollY` does mid-bounce on any given device. Desktop
-mice/trackwheels on this OS never produce a negative `scrollY` and don't
-rubber-band, so both changes are no-ops there, matching the issue's
-"computer browser should stay as is" requirement.
+question of what `scrollY` does mid-bounce on any given device. That
+eliminated the bounce itself, but a third, distinct bug remained: the
+logo's size still swung unpredictably with scroll depth (independent of
+any bounce), because `handleScroll()` read `window.innerHeight` fresh on
+every scroll event to compute both the progress ratio's denominator and
+the logo's vertical centering — and iOS/iPadOS Safari's collapsible
+toolbar animates `window.innerHeight` over the course of an ordinary
+scroll gesture, making that denominator a moving target against the also-
+changing `scrollY` numerator. Fixed by caching the viewport height once
+and only refreshing it on `resize` (which already existed as a listener
+for this exact toolbar behavior, just wasn't feeding the cache), so
+`handleScroll()` no longer reacts to the toolbar's live height changes
+mid-scroll. Desktop mice/trackwheels on this OS never produce a negative
+`scrollY`, don't rubber-band, and don't have a collapsible toolbar, so
+all three changes are no-ops there, matching the issue's "computer
+browser should stay as is" requirement.
 
 ## [0.6.0] - 2026-07-18
 
