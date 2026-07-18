@@ -18,6 +18,12 @@
                 <img src="../assets/hbbc_logo.webp" alt="HBBC Logo" class="block w-[clamp(180px,30vw,300px)] h-auto" @load="onLogoLoad" />
             </div>
 
+            <!-- TEMPORARY diagnostic overlay round 2 for issue #12 — remove before merging.
+                 Round 1's race-condition fix didn't resolve it on a real iPad, so this
+                 exposes the correction factor itself plus call/block/complete counters
+                 to see directly whether the guard is even engaging. -->
+            <div class="fixed top-0 right-0 z-50 bg-black/80 text-green-400 font-mono text-[10px] p-2 leading-tight pointer-events-none whitespace-pre">{{ debugText }}</div>
+
             <!-- VFB Schal Background (repeated, scrolls with page) -->
             <div v-for="offset in schalOffsets" :key="offset" class="absolute left-1/2 z-10 pointer-events-none" :style="{
                 top: `${offset}vh`,
@@ -202,6 +208,29 @@ const logoScaleCorrectionFactor = ref(1)
 // toolbar's height changes (see the listener comment in onMounted).
 const viewportHeight = ref(window.innerHeight)
 
+// TEMPORARY diagnostic overlay round 2 for issue #12 — remove before merging.
+const debugCalls = ref(0)
+const debugBlocked = ref(0)
+const debugCompleted = ref(0)
+const debugResizeEvents = ref(0)
+const debugText = ref('')
+const updateDebugText = () => {
+    const vv = window.visualViewport
+    debugText.value = [
+        `scrollY: ${window.scrollY.toFixed(1)}`,
+        `innerHeight: ${window.innerHeight}`,
+        `cached viewportHeight: ${viewportHeight.value}`,
+        `visualViewport.height: ${vv ? vv.height.toFixed(1) : 'n/a'}`,
+        `correctionFactor: ${logoScaleCorrectionFactor.value.toFixed(4)}`,
+        `logoScale: ${logoScale.value.toFixed(3)}`,
+        `logoTranslateY: ${logoTranslateY.value.toFixed(1)}`,
+        `resize events: ${debugResizeEvents.value}`,
+        `correction calls started: ${debugCalls.value}`,
+        `correction calls blocked (guard worked): ${debugBlocked.value}`,
+        `correction calls completed: ${debugCompleted.value}`,
+    ].join('\n')
+}
+
 // Computed once — at rest (progress=0), the logo's largest and therefore
 // riskiest size — rather than every scroll frame. Both the scale and
 // translateY formulas move monotonically from this resting state toward
@@ -224,7 +253,11 @@ const viewportHeight = ref(window.innerHeight)
 // identical scrollY/innerHeight showing two different logoScale values.
 let correctionFactorInFlight = false
 const computeLogoScaleCorrectionFactor = async () => {
-    if (correctionFactorInFlight) return
+    debugCalls.value++ // TEMPORARY diagnostic — remove before merging.
+    if (correctionFactorInFlight) {
+        debugBlocked.value++ // TEMPORARY diagnostic — remove before merging.
+        return
+    }
     correctionFactorInFlight = true
     try {
         logoScaleCorrectionFactor.value = 1
@@ -264,6 +297,7 @@ const computeLogoScaleCorrectionFactor = async () => {
             if (ratio <= 0) break
             logoScaleCorrectionFactor.value *= ratio
         }
+        debugCompleted.value++ // TEMPORARY diagnostic — remove before merging.
     } finally {
         correctionFactorInFlight = false
     }
@@ -353,6 +387,7 @@ const onScroll = () => {
 // factor depends on it, so recompute before the next handleScroll.
 let resizeTicking = false
 const onResize = () => {
+    debugResizeEvents.value++ // TEMPORARY diagnostic — remove before merging.
     if (resizeTicking) return
     resizeTicking = true
     requestAnimationFrame(async () => {
@@ -369,6 +404,13 @@ const onResize = () => {
     })
 }
 
+// TEMPORARY diagnostic overlay round 2 for issue #12 — remove before merging.
+let debugRafId = 0
+const debugLoop = () => {
+    updateDebugText()
+    debugRafId = requestAnimationFrame(debugLoop)
+}
+
 onMounted(async () => {
     await computeLogoScaleCorrectionFactor()
     handleScroll() // initialize logo properly
@@ -376,11 +418,13 @@ onMounted(async () => {
     // Covers iOS Safari's collapsible toolbar changing window.innerHeight
     // with no 'scroll' event, and orientation changes on tablets/phones.
     window.addEventListener('resize', onResize)
+    debugRafId = requestAnimationFrame(debugLoop)
 })
 
 onUnmounted(() => {
     window.removeEventListener('scroll', onScroll)
     window.removeEventListener('resize', onResize)
+    cancelAnimationFrame(debugRafId)
 })
 
 // The very first computeLogoScaleCorrectionFactor()/handleScroll() calls
