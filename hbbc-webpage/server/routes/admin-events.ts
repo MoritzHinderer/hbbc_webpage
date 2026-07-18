@@ -1,10 +1,10 @@
 import { Router } from 'express'
 import path from 'node:path'
-import { readCollection, writeCollection, type WithId } from '../content-store.js'
+import { contentDir, readCollection, writeCollection, type WithId } from '../content-store.js'
 import { isNonEmptyString } from '../validation.js'
 
 const router = Router()
-const eventsFile = path.join(process.cwd(), 'server', 'content', 'events.json')
+const eventsFile = path.join(contentDir, 'events.json')
 
 interface ClubEvent extends WithId {
   title: string

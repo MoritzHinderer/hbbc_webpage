@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { contentDir } from './content-store.js'
 
-const contentDir = path.join(process.cwd(), 'server', 'content')
 export const galleryFile = path.join(contentDir, 'gallery.json')
 export const albumsFile = path.join(contentDir, 'albums.json')
 export const photosDir = path.join(contentDir, 'gallery-photos')

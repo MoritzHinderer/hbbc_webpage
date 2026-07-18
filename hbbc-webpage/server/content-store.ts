@@ -1,4 +1,23 @@
 import { promises as fs } from 'node:fs'
+import path from 'node:path'
+
+// CONTENT_DIR lets tests point every content file/upload path (members,
+// events, news, gallery, downloads) at an isolated, nonexistent directory
+// in one place — readCollection() below already treats a missing file as
+// an empty collection, and writeCollection() would create it fresh if a
+// test ever needed to. Unset in normal dev/production use, where it falls
+// back to the real on-disk server/content/ directory. Without this, admin
+// CRUD tests for these routes would read and write the actual live
+// content JSON files used by the running site.
+export const contentDir = process.env.CONTENT_DIR || path.join(process.cwd(), 'server', 'content')
+
+// Same idea as CONTENT_DIR, for the one piece of admin-editable content
+// that lives under public/ instead: the downloads manifest
+// (public/downloads/downloads.json) is deliberately git-tracked (so the
+// list of documents is visible without hitting the API), unlike
+// everything under server/content/ — but that means it's just as real
+// and just as important not to overwrite from a test run.
+export const publicDir = process.env.PUBLIC_DIR || path.join(process.cwd(), 'public')
 
 export interface WithId {
   id: number
