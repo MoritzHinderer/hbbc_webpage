@@ -4,8 +4,15 @@
         <div class="relative h-screen overflow-hidden">
 
             <!-- Logo -->
+            <!-- translateZ(0) + will-change: transform force this fixed element
+                 onto its own GPU compositor layer — a documented WebKit
+                 workaround for position:fixed elements flickering/mis-sizing
+                 while iOS/iPadOS Safari's own toolbar hide/show animation is
+                 in progress (not just during overscroll), independent of
+                 whatever scrollY-driven scale/position values are applied. -->
             <div ref="logoContainerRef" class="fixed left-1/2 z-40 pointer-events-none" :style="{
-                transform: `translate(-50%, ${logoTranslateY}px) scale(${logoScale})`,
+                transform: `translate(-50%, ${logoTranslateY}px) scale(${logoScale}) translateZ(0)`,
+                willChange: 'transform',
                 opacity: logoOpacity
             }">
                 <img src="../assets/hbbc_logo.webp" alt="HBBC Logo" class="block w-[clamp(180px,30vw,300px)] h-auto" @load="onLogoLoad" />

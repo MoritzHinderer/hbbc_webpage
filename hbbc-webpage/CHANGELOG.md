@@ -45,10 +45,20 @@ changing `scrollY` numerator. Fixed by caching the viewport height once
 and only refreshing it on `resize` (which already existed as a listener
 for this exact toolbar behavior, just wasn't feeding the cache), so
 `handleScroll()` no longer reacts to the toolbar's live height changes
-mid-scroll. Desktop mice/trackwheels on this OS never produce a negative
+mid-scroll. Still not enough on a real iPad — user confirmed the size
+still swung with scroll depth even with both prior fixes in place, which
+research (see PR #15 for sources) tied to a distinct, documented WebKit
+issue: `position: fixed` elements can flicker/mis-render while iOS/
+iPadOS Safari's own toolbar hide/show animation is in progress,
+independent of whatever CSS values are applied to them. Fourth fix:
+force the logo's fixed container onto its own GPU compositor layer via
+`translateZ(0)` (appended to its existing transform) and
+`will-change: transform` — the standard workaround for this class of
+bug. Desktop mice/trackwheels on this OS never produce a negative
 `scrollY`, don't rubber-band, and don't have a collapsible toolbar, so
-all three changes are no-ops there, matching the issue's "computer
-browser should stay as is" requirement.
+all four changes are no-ops there, matching the issue's "computer
+browser should stay as is" requirement. Not yet confirmed fixed on a
+real iPad as of this entry.
 
 ## [0.6.0] - 2026-07-18
 
