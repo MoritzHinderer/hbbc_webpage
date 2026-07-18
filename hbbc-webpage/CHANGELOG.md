@@ -20,102 +20,27 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [0.6.1] - 2026-07-18
 
-Fixed the home page hero logo's size/position visibly jumping around
-while overscrolling on mobile/iPad (closes #12), via two changes.
-First, `window.scrollY` briefly goes negative during the browser's own
-elastic "rubber-band" overscroll bounce (pulling past the top); the
-scroll-progress calculation driving the logo's scale/translateY was only
-clamped on the upper bound, so a negative `scrollY` fed a negative
-progress into those formulas and overshot them. Fixed by flooring
-`scrollY` at 0 before computing progress — confirmed fixed on a real
-iPhone. That alone wasn't enough on iPad, where the same visible glitch
-persisted (tracking the bounce smoothly rather than jumping — pointing
-at the browser's live bounce rendering itself, not just the JS math).
-Second fix: `overscroll-behavior-y: none` on `html`/`body` disables the
-elastic bounce outright (supported since Safari 16), sidestepping the
-question of what `scrollY` does mid-bounce on any given device. That
-eliminated the bounce itself, but a third, distinct bug remained: the
-logo's size still swung unpredictably with scroll depth (independent of
-any bounce), because `handleScroll()` read `window.innerHeight` fresh on
-every scroll event to compute both the progress ratio's denominator and
-the logo's vertical centering — and iOS/iPadOS Safari's collapsible
-toolbar animates `window.innerHeight` over the course of an ordinary
-scroll gesture, making that denominator a moving target against the also-
-changing `scrollY` numerator. Fixed by caching the viewport height once
-and only refreshing it on `resize` (which already existed as a listener
-for this exact toolbar behavior, just wasn't feeding the cache), so
-`handleScroll()` no longer reacts to the toolbar's live height changes
-mid-scroll. Still not enough on a real iPad — user confirmed the size
-still swung with scroll depth even with both prior fixes in place, which
-research (see PR #15 for sources) tied to a distinct, documented WebKit
-issue: `position: fixed` elements can flicker/mis-render while iOS/
-iPadOS Safari's own toolbar hide/show animation is in progress,
-independent of whatever CSS values are applied to them. Fourth fix:
-force the logo's fixed container onto its own GPU compositor layer via
-`translateZ(0)` (appended to its existing transform) and
-`will-change: transform` — the standard workaround for this class of
-bug. Desktop mice/trackwheels on this OS never produce a negative
-`scrollY`, don't rubber-band, and don't have a collapsible toolbar, so
-all four changes are no-ops there, matching the issue's "computer
-browser should stay as is" requirement. Still not enough — user provided
-a screen recording plus two screenshots showing `logoScale` at two
-different values (1.190 and 2.000) despite `scrollY`, `innerHeight`, and
-`visualViewport.height` all reading identically between them, which
-ruled out every scroll-position-dependent explanation above and pointed
-at the one-time "correction factor" the code computes once (at mount and
-on every `resize`) to keep the logo from overlapping the heading text
-below it. Fifth fix, the actual root cause: `onResize`'s handler cleared
-its `resizeTicking` guard *synchronously*, immediately after merely
-*starting* `computeLogoScaleCorrectionFactor()` — an async function with
-its own multi-frame loop — rather than waiting for it to finish. iPad
-Safari's toolbar hide/show can fire several `resize` events in quick
-succession while it animates and settles, so a second `resize` event
-arriving while the first computation was still mid-flight started a
-second, overlapping computation racing the first over the same shared
-`logoScaleCorrectionFactor` ref (which each call unconditionally resets
-to `1` at its start) — exactly matching the evidence: sometimes the
-correct corrected value, sometimes stuck at the uncorrected default,
-independent of scroll position. Fixed by awaiting the full chain in
-`onResize` and adding an internal reentrancy guard directly inside
-`computeLogoScaleCorrectionFactor()` (protecting every caller, including
-the image's own `load` handler, not just `onResize`). Confirmed via a
-Playwright reproduction: firing rapid, overlapping `resize` events at a
-viewport size that genuinely requires correction — 15 rounds all
-converged on the same correct scale with the fix, versus not reliably
-reproducible as a synthetic automated test even against the pre-fix
-code, since real Safari's event timing under an actual animated toolbar
-isn't fully replicable in a headless browser. Confidence here rests on
-the code-level proof (the synchronous guard-clear) and the user's own
-hard evidence, not an automated repro. Still not enough — user confirmed
-the fifth fix also didn't resolve it, so a temporary diagnostic overlay
-was re-added exposing `logoScaleCorrectionFactor` directly plus counters
-for how many times the correction computation starts/gets blocked by the
-reentrancy guard/completes. Four fresh screenshots showed the actual bug
-clearly for the first time: "correction calls blocked" stayed at `0`
-through 2, 4, 6, and 12 `resize` events — the reentrancy guard was never
-even engaging, meaning fix #5's race-condition diagnosis, while a real
-and valid fix in its own right, was not the (or not the only) actual
-cause. Yet `correctionFactor` still flip-flopped between the correct
-value and the uncorrected default across separate, fully sequential
-(non-overlapping, guard-confirmed) calls, at an identical, already-
-settled `innerHeight`. Sixth fix: only recompute the correction factor
-on a genuine viewport **width** change (a real orientation change/window
-resize), not on every `resize` — iPadOS Safari's toolbar hide/show only
-ever changes height, never width, so it no longer retriggers this
-measurement at all, sidestepping whatever exact WebKit-specific
-layout/paint timing was producing the bad reads (unreproducible even
-with genuine Playwright viewport resizes in headless Chromium, which
-appears to complete its layout synchronously in a way Safari's
-*animated* toolbar transition does not). This also matches the
-correction factor's own original design intent, predating any of these
-six fixes: a one-time, worst-case "resting state" value, never meant to
-reactively track a transient browser-chrome fluctuation. **Confirmed
-fixed on a real iPad** — debug overlay removed. Since the actual root
-cause was the correction-factor recomputation, not the overscroll bounce
-itself, fix #2's `overscroll-behavior-y: none` (which disabled the
-browser's native rubber-band bounce site-wide) was no longer load-
-bearing and has been reverted at the user's request, restoring the
-native bounce.
+Fixed the home page hero logo's size and position changing
+unpredictably while scrolling on iPad/iPhone Safari (closes #12).
+
+The logo shrinks slightly on some screen sizes so it doesn't overlap the
+heading below it — a "correction factor" measured once on page load. The
+code also recomputed that measurement on every window `resize`, which is
+correct for a real orientation change or window resize, but iPadOS
+Safari's own URL/tab bar also fires `resize` every time it hides while
+scrolling down and reappears scrolling up. That meant the "one-time"
+measurement was actually being redone throughout an ordinary scroll
+session, and each individual remeasurement could land on a different,
+sometimes-wrong result depending on the exact instant it ran relative to
+the browser's own toolbar animation. Fixed by only recomputing on a
+genuine viewport *width* change — the toolbar hide/show never changes
+width, so it no longer retriggers this measurement at all.
+
+Also fixed a smaller, related bug affecting iPhone: `window.scrollY`
+briefly goes negative during the browser's own elastic "rubber-band"
+overscroll bounce (pulling past the top), which fed an out-of-range
+value into the same scroll-progress math and briefly overshot the
+logo's scale/position. Now floored at 0.
 
 ## [0.6.0] - 2026-07-18
 
