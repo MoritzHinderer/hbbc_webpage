@@ -18,6 +18,22 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-18
+
+Fixed the home page hero logo's size/position visibly jumping around
+while overscrolling on mobile/iPad (closes #12). iOS/Android's overscroll
+("pull past the top" rubber-banding, used to trigger a reload) briefly
+drives `window.scrollY` negative; the scroll-progress calculation driving
+the logo's scale/translateY was only clamped on the upper bound, so a
+negative `scrollY` fed a negative progress into those formulas and
+overshot them. Fixed by flooring `scrollY` at 0 before computing
+progress. Desktop mice/trackwheels never produce a negative `scrollY`,
+so desktop behavior is unaffected — verified with a Playwright check
+that stubs `window.scrollY` to a negative value and confirms the logo's
+rendered transform matches its resting state, on both a mobile
+(iPhone 13) and a desktop viewport; also confirmed the same check fails
+without the fix, to be sure it actually catches the bug.
+
 ## [0.6.0] - 2026-07-18
 
 Phase 3 of automated testing (further progress on #7, still not closed —

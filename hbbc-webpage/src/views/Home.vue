@@ -253,7 +253,14 @@ const computeSchalOffsets = (): number[] => {
 const schalOffsets = ref(computeSchalOffsets())
 
 const handleScroll = async () => {
-    const scrollY = window.scrollY
+    // iOS/Android overscroll ("pull past the top" rubber-banding, used to
+    // trigger a reload) briefly drives window.scrollY negative — without a
+    // floor here, that fed a negative progress into the scale/position
+    // formulas below and overshot them, which is what made the logo's size
+    // visibly jump around while overscrolling on mobile/iPad. Desktop mice/
+    // trackwheels never produce a negative scrollY, so this floor is a
+    // no-op there.
+    const scrollY = Math.max(window.scrollY, 0)
     const heroHeight = window.innerHeight
     const progress = Math.min(scrollY / (heroHeight * 0.5), 1)
 
