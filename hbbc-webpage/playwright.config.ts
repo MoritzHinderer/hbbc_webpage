@@ -59,6 +59,22 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       DB_PATH: E2E_DB_PATH,
+      // app.ts does `import 'dotenv/config'`, which loads the real local
+      // .env — and dotenv never overrides a variable already set in
+      // process.env, so blanking these here (applied before the spawned
+      // server process even starts) guarantees mailerConfigured
+      // (server/mailer.ts) is false for the whole e2e run, regardless of
+      // what real SMTP credentials sit in that .env file. Same reasoning
+      // as vitest.server.config.ts — MISSED here originally, which meant
+      // every e2e run's register()/forgot-password() calls sent real
+      // email through real Gmail SMTP to the real CONTACT_TO_EMAIL
+      // inbox. Confirmed and fixed after the user reported actually
+      // receiving them.
+      SMTP_HOST: '',
+      SMTP_PORT: '',
+      SMTP_USER: '',
+      SMTP_PASS: '',
+      CONTACT_TO_EMAIL: '',
     },
   },
 })
