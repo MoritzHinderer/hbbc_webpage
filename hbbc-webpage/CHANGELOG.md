@@ -57,8 +57,37 @@ force the logo's fixed container onto its own GPU compositor layer via
 bug. Desktop mice/trackwheels on this OS never produce a negative
 `scrollY`, don't rubber-band, and don't have a collapsible toolbar, so
 all four changes are no-ops there, matching the issue's "computer
-browser should stay as is" requirement. Not yet confirmed fixed on a
-real iPad as of this entry.
+browser should stay as is" requirement. Still not enough — user provided
+a screen recording plus two screenshots showing `logoScale` at two
+different values (1.190 and 2.000) despite `scrollY`, `innerHeight`, and
+`visualViewport.height` all reading identically between them, which
+ruled out every scroll-position-dependent explanation above and pointed
+at the one-time "correction factor" the code computes once (at mount and
+on every `resize`) to keep the logo from overlapping the heading text
+below it. Fifth fix, the actual root cause: `onResize`'s handler cleared
+its `resizeTicking` guard *synchronously*, immediately after merely
+*starting* `computeLogoScaleCorrectionFactor()` — an async function with
+its own multi-frame loop — rather than waiting for it to finish. iPad
+Safari's toolbar hide/show can fire several `resize` events in quick
+succession while it animates and settles, so a second `resize` event
+arriving while the first computation was still mid-flight started a
+second, overlapping computation racing the first over the same shared
+`logoScaleCorrectionFactor` ref (which each call unconditionally resets
+to `1` at its start) — exactly matching the evidence: sometimes the
+correct corrected value, sometimes stuck at the uncorrected default,
+independent of scroll position. Fixed by awaiting the full chain in
+`onResize` and adding an internal reentrancy guard directly inside
+`computeLogoScaleCorrectionFactor()` (protecting every caller, including
+the image's own `load` handler, not just `onResize`). Confirmed via a
+Playwright reproduction: firing rapid, overlapping `resize` events at a
+viewport size that genuinely requires correction — 15 rounds all
+converged on the same correct scale with the fix, versus not reliably
+reproducible as a synthetic automated test even against the pre-fix
+code, since real Safari's event timing under an actual animated toolbar
+isn't fully replicable in a headless browser. Confidence here rests on
+the code-level proof (the synchronous guard-clear) and the user's own
+hard evidence, not an automated repro. Not yet confirmed fixed on a real
+iPad as of this entry.
 
 ## [0.6.0] - 2026-07-18
 

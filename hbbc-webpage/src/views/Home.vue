@@ -18,11 +18,6 @@
                 <img src="../assets/hbbc_logo.webp" alt="HBBC Logo" class="block w-[clamp(180px,30vw,300px)] h-auto" @load="onLogoLoad" />
             </div>
 
-            <!-- TEMPORARY diagnostic overlay for issue #12 — remove before merging.
-                 Four fixes in a row produced no observable change on a real iPad, so
-                 this reads out the actual live values instead of guessing further. -->
-            <div class="fixed top-0 right-0 z-50 bg-black/80 text-green-400 font-mono text-xs p-2 leading-tight pointer-events-none whitespace-pre">{{ debugText }}</div>
-
             <!-- VFB Schal Background (repeated, scrolls with page) -->
             <div v-for="offset in schalOffsets" :key="offset" class="absolute left-1/2 z-10 pointer-events-none" :style="{
                 top: `${offset}vh`,
@@ -190,21 +185,6 @@ const logoScale = ref(initialScale)
 const logoTranslateY = ref(window.innerHeight / 2 - logoBaseHeight / 2)
 const logoOpacity = ref(1)
 const schalScale = ref(1)
-
-// TEMPORARY diagnostic overlay for issue #12 — remove before merging.
-const debugText = ref('')
-const updateDebugText = () => {
-    const vv = window.visualViewport
-    debugText.value = [
-        `scrollY: ${window.scrollY.toFixed(1)}`,
-        `innerHeight: ${window.innerHeight}`,
-        `cached viewportHeight: ${viewportHeight.value}`,
-        `visualViewport.height: ${vv ? vv.height.toFixed(1) : 'n/a'}`,
-        `visualViewport.offsetTop: ${vv ? vv.offsetTop.toFixed(1) : 'n/a'}`,
-        `logoScale: ${logoScale.value.toFixed(3)}`,
-        `logoTranslateY: ${logoTranslateY.value.toFixed(1)}`,
-    ].join('\n')
-}
 const logoContainerRef = ref<HTMLElement | null>(null)
 const heroTextRef = ref<HTMLElement | null>(null)
 const heroTextClearance = 24 // minimum gap kept above the "Willkommen beim" heading
@@ -232,43 +212,60 @@ const viewportHeight = ref(window.innerHeight)
 // JS-driven formulas, that comparison was a moving target and could
 // transiently compute a near-zero ratio partway through the scroll,
 // flickering the logo's size before "popping" to its correct one.
+// Guards against concurrent invocations stomping on the shared
+// logoScaleCorrectionFactor ref below (each call resets it to 1, then
+// multiplies it down over several awaited frames) — onResize, onLogoLoad,
+// and the initial onMounted call can all trigger this, and iPad Safari's
+// toolbar hide/show can fire several 'resize' events in quick succession
+// while it animates and settles. Two overlapping calls racing on that
+// shared ref is what produced a logo size that was sometimes correct and
+// sometimes stuck at the uncorrected default (scale factor exactly 1),
+// regardless of scroll position — confirmed via two screenshots at
+// identical scrollY/innerHeight showing two different logoScale values.
+let correctionFactorInFlight = false
 const computeLogoScaleCorrectionFactor = async () => {
-    logoScaleCorrectionFactor.value = 1
+    if (correctionFactorInFlight) return
+    correctionFactorInFlight = true
+    try {
+        logoScaleCorrectionFactor.value = 1
 
-    // Iterated rather than solved in one shot, and reusing handleScroll()
-    // itself (called with scrollY still 0 here, at mount) rather than a
-    // simplified stand-in for it — an earlier version only replicated the
-    // scale/translateY formulas, not the navbar-clearance correction that
-    // handleScroll also applies, so its measurement didn't match what
-    // actually ends up on screen and undercorrected. Re-measuring against
-    // the real thing and correcting again converges empirically. Capped at
-    // a few rounds — each one should shrink the remaining overlap towards
-    // zero, not oscillate.
-    for (let attempt = 0; attempt < 4; attempt++) {
-        await handleScroll()
+        // Iterated rather than solved in one shot, and reusing handleScroll()
+        // itself (called with scrollY still 0 here, at mount) rather than a
+        // simplified stand-in for it — an earlier version only replicated the
+        // scale/translateY formulas, not the navbar-clearance correction that
+        // handleScroll also applies, so its measurement didn't match what
+        // actually ends up on screen and undercorrected. Re-measuring against
+        // the real thing and correcting again converges empirically. Capped at
+        // a few rounds — each one should shrink the remaining overlap towards
+        // zero, not oscillate.
+        for (let attempt = 0; attempt < 4; attempt++) {
+            await handleScroll()
 
-        if (!logoContainerRef.value || !heroTextRef.value) return
-        const logoRect = logoContainerRef.value.getBoundingClientRect()
-        const textTop = heroTextRef.value.getBoundingClientRect().top
-        const maxBottom = textTop - heroTextClearance
-        // The source logo image has ~12.5% transparent margin below the
-        // drawn crest (trimmed content is 468 of 640px tall) — the box's
-        // raw bottom edge isn't where the artwork visually ends, so using
-        // it directly overcorrects (shrinks logos that already had a
-        // visible gap, like desktop's, because of margin baked into the
-        // asset itself, not any real crowding).
-        const effectiveBottom = logoRect.bottom - logoRect.height * (80 / 640)
-        const overlap = effectiveBottom - maxBottom
-        if (logoRect.height <= 0 || overlap <= 0) break
+            if (!logoContainerRef.value || !heroTextRef.value) return
+            const logoRect = logoContainerRef.value.getBoundingClientRect()
+            const textTop = heroTextRef.value.getBoundingClientRect().top
+            const maxBottom = textTop - heroTextClearance
+            // The source logo image has ~12.5% transparent margin below the
+            // drawn crest (trimmed content is 468 of 640px tall) — the box's
+            // raw bottom edge isn't where the artwork visually ends, so using
+            // it directly overcorrects (shrinks logos that already had a
+            // visible gap, like desktop's, because of margin baked into the
+            // asset itself, not any real crowding).
+            const effectiveBottom = logoRect.bottom - logoRect.height * (80 / 640)
+            const overlap = effectiveBottom - maxBottom
+            if (logoRect.height <= 0 || overlap <= 0) break
 
-        // scale() shrinks symmetrically around the box's own center, so
-        // both edges move inward — the top drops by the same amount the
-        // bottom rises. Shrinking by (1 - 2*overlap/height), not
-        // (1 - overlap/height), is what actually lands the bottom edge
-        // exactly on maxBottom instead of leaving half the overlap.
-        const ratio = 1 - (2 * overlap) / logoRect.height
-        if (ratio <= 0) break
-        logoScaleCorrectionFactor.value *= ratio
+            // scale() shrinks symmetrically around the box's own center, so
+            // both edges move inward — the top drops by the same amount the
+            // bottom rises. Shrinking by (1 - 2*overlap/height), not
+            // (1 - overlap/height), is what actually lands the bottom edge
+            // exactly on maxBottom instead of leaving half the overlap.
+            const ratio = 1 - (2 * overlap) / logoRect.height
+            if (ratio <= 0) break
+            logoScaleCorrectionFactor.value *= ratio
+        }
+    } finally {
+        correctionFactorInFlight = false
     }
 }
 
@@ -358,21 +355,18 @@ let resizeTicking = false
 const onResize = () => {
     if (resizeTicking) return
     resizeTicking = true
-    requestAnimationFrame(() => {
+    requestAnimationFrame(async () => {
+        // Awaits the full chain (see computeLogoScaleCorrectionFactor's own
+        // reentrancy guard for why) rather than clearing resizeTicking
+        // synchronously right after merely starting it, so a second
+        // 'resize' event while this is still in flight — plausible during
+        // iPad/iPhone Safari's toolbar hide/show animation — doesn't
+        // schedule a redundant overlapping run.
         viewportHeight.value = window.innerHeight
-        computeLogoScaleCorrectionFactor().then(handleScroll)
+        await computeLogoScaleCorrectionFactor()
+        await handleScroll()
         resizeTicking = false
     })
-}
-
-// TEMPORARY diagnostic overlay for issue #12 — remove before merging.
-// Runs its own rAF loop rather than piggybacking on onScroll/onResize so
-// it keeps reading live values even during a browser-chrome animation
-// that might not synchronously fire 'scroll'/'resize' for every frame.
-let debugRafId = 0
-const debugLoop = () => {
-    updateDebugText()
-    debugRafId = requestAnimationFrame(debugLoop)
 }
 
 onMounted(async () => {
@@ -382,13 +376,11 @@ onMounted(async () => {
     // Covers iOS Safari's collapsible toolbar changing window.innerHeight
     // with no 'scroll' event, and orientation changes on tablets/phones.
     window.addEventListener('resize', onResize)
-    debugRafId = requestAnimationFrame(debugLoop)
 })
 
 onUnmounted(() => {
     window.removeEventListener('scroll', onScroll)
     window.removeEventListener('resize', onResize)
-    cancelAnimationFrame(debugRafId)
 })
 
 // The very first computeLogoScaleCorrectionFactor()/handleScroll() calls
