@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Prevents the browser's own elastic "rubber-band" overscroll bounce
+   (pulling past the top/bottom of the page). The home page's hero logo
+   drives its scale/position off window.scrollY (see Home.vue) — clamping
+   that math to never go negative fixed the visible glitch on iPhone, but
+   it was still reproducible on iPad, suggesting iPad's bounce isn't fully
+   caught by that JS-side clamp. Disabling the bounce outright (supported
+   since Safari 16) sidesteps the question entirely, on any page, not just
+   this one. */
+html, body {
+  overscroll-behavior-y: none;
+}
+
 @layer components {
   /* Reusable "nice" interaction treatment for primary action buttons/links:
      a subtle hover lift, a tactile press-down on click, and a light sweep

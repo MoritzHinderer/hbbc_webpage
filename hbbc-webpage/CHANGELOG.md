@@ -21,18 +21,22 @@ The VPS picks up the new tag automatically within the hour (or run
 ## [0.6.1] - 2026-07-18
 
 Fixed the home page hero logo's size/position visibly jumping around
-while overscrolling on mobile/iPad (closes #12). iOS/Android's overscroll
-("pull past the top" rubber-banding, used to trigger a reload) briefly
-drives `window.scrollY` negative; the scroll-progress calculation driving
-the logo's scale/translateY was only clamped on the upper bound, so a
-negative `scrollY` fed a negative progress into those formulas and
-overshot them. Fixed by flooring `scrollY` at 0 before computing
-progress. Desktop mice/trackwheels never produce a negative `scrollY`,
-so desktop behavior is unaffected — verified with a Playwright check
-that stubs `window.scrollY` to a negative value and confirms the logo's
-rendered transform matches its resting state, on both a mobile
-(iPhone 13) and a desktop viewport; also confirmed the same check fails
-without the fix, to be sure it actually catches the bug.
+while overscrolling on mobile/iPad (closes #12), via two changes.
+First, `window.scrollY` briefly goes negative during the browser's own
+elastic "rubber-band" overscroll bounce (pulling past the top); the
+scroll-progress calculation driving the logo's scale/translateY was only
+clamped on the upper bound, so a negative `scrollY` fed a negative
+progress into those formulas and overshot them. Fixed by flooring
+`scrollY` at 0 before computing progress — confirmed fixed on a real
+iPhone. That alone wasn't enough on iPad, where the same visible glitch
+persisted (tracking the bounce smoothly rather than jumping — pointing
+at the browser's live bounce rendering itself, not just the JS math).
+Second fix: `overscroll-behavior-y: none` on `html`/`body` disables the
+elastic bounce outright (supported since Safari 16), sidestepping the
+question of what `scrollY` does mid-bounce on any given device. Desktop
+mice/trackwheels on this OS never produce a negative `scrollY` and don't
+rubber-band, so both changes are no-ops there, matching the issue's
+"computer browser should stay as is" requirement.
 
 ## [0.6.0] - 2026-07-18
 
