@@ -18,6 +18,24 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-18
+
+Phase 3 of automated testing (further progress on #7, still not closed —
+frontend component tests remain, roughly 30 views/components with
+essentially no coverage yet). Every backend route now has real
+integration test coverage: contact, downloads (per-file auth gating),
+the member-only events/Fanclub-Termine list, gallery (approved-only
+filtering, uploads, albums), profile (member-card CRUD, newsletter
+toggle), and the OpenLigaDB-backed public vfb-matches schedule (fetch
+mocked, cache behavior and external-API resilience exercised
+deterministically via a faked Date). Backend test count: 114 -> 150.
+Also caught and fixed a real order-dependent flakiness bug: a new
+profile.test.ts left member cards behind in the shared test content
+directory with a fanclub_member_id that isn't guaranteed unique across
+test files, occasionally causing a false-positive conflict in an
+unrelated test — fixed by cleaning up each created card, same
+discipline already used in members.test.ts.
+
 ## [0.5.0] - 2026-07-18
 
 Phase 2 of automated testing (further progress on #7, still not closed —
