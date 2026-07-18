@@ -109,9 +109,8 @@ appears to complete its layout synchronously in a way Safari's
 *animated* toolbar transition does not). This also matches the
 correction factor's own original design intent, predating any of these
 six fixes: a one-time, worst-case "resting state" value, never meant to
-reactively track a transient browser-chrome fluctuation. Not yet
-confirmed fixed on a real iPad as of this entry. Debug overlay
-intentionally still present pending that confirmation.
+reactively track a transient browser-chrome fluctuation. **Confirmed
+fixed on a real iPad** — debug overlay removed.
 
 ## [0.6.0] - 2026-07-18
 
