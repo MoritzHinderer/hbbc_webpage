@@ -18,6 +18,30 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-07-18
+
+Fixed the home page hero logo's size and position changing
+unpredictably while scrolling on iPad/iPhone Safari (closes #12).
+
+The logo shrinks slightly on some screen sizes so it doesn't overlap the
+heading below it — a "correction factor" measured once on page load. The
+code also recomputed that measurement on every window `resize`, which is
+correct for a real orientation change or window resize, but iPadOS
+Safari's own URL/tab bar also fires `resize` every time it hides while
+scrolling down and reappears scrolling up. That meant the "one-time"
+measurement was actually being redone throughout an ordinary scroll
+session, and each individual remeasurement could land on a different,
+sometimes-wrong result depending on the exact instant it ran relative to
+the browser's own toolbar animation. Fixed by only recomputing on a
+genuine viewport *width* change — the toolbar hide/show never changes
+width, so it no longer retriggers this measurement at all.
+
+Also fixed a smaller, related bug affecting iPhone: `window.scrollY`
+briefly goes negative during the browser's own elastic "rubber-band"
+overscroll bounce (pulling past the top), which fed an out-of-range
+value into the same scroll-progress math and briefly overshot the
+logo's scale/position. Now floored at 0.
+
 ## [0.6.0] - 2026-07-18
 
 Phase 3 of automated testing (further progress on #7, still not closed —

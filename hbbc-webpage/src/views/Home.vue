@@ -4,8 +4,11 @@
         <div class="relative h-screen overflow-hidden">
 
             <!-- Logo -->
+            <!-- translateZ(0)/will-change force a GPU compositor layer — avoids
+                 WebKit position:fixed flicker during Safari's toolbar animation. -->
             <div ref="logoContainerRef" class="fixed left-1/2 z-40 pointer-events-none" :style="{
-                transform: `translate(-50%, ${logoTranslateY}px) scale(${logoScale})`,
+                transform: `translate(-50%, ${logoTranslateY}px) scale(${logoScale}) translateZ(0)`,
+                willChange: 'transform',
                 opacity: logoOpacity
             }">
                 <img src="../assets/hbbc_logo.webp" alt="HBBC Logo" class="block w-[clamp(180px,30vw,300px)] h-auto" @load="onLogoLoad" />
@@ -183,6 +186,11 @@ const heroTextRef = ref<HTMLElement | null>(null)
 const heroTextClearance = 24 // minimum gap kept above the "Willkommen beim" heading
 const logoScaleCorrectionFactor = ref(1)
 
+// Cached instead of read live in handleScroll(): iOS Safari's toolbar
+// animates window.innerHeight mid-scroll, so a live read made it a moving
+// target. Only refreshed on resize (see onResize).
+const viewportHeight = ref(window.innerHeight)
+
 // Computed once — at rest (progress=0), the logo's largest and therefore
 // riskiest size — rather than every scroll frame. Both the scale and
 // translateY formulas move monotonically from this resting state toward
@@ -193,43 +201,53 @@ const logoScaleCorrectionFactor = ref(1)
 // JS-driven formulas, that comparison was a moving target and could
 // transiently compute a near-zero ratio partway through the scroll,
 // flickering the logo's size before "popping" to its correct one.
+// Reentrancy guard: onMounted, onResize, and onLogoLoad can all call this,
+// and each call resets logoScaleCorrectionFactor before recomputing it —
+// overlapping calls would race on that shared ref.
+let correctionFactorInFlight = false
 const computeLogoScaleCorrectionFactor = async () => {
-    logoScaleCorrectionFactor.value = 1
+    if (correctionFactorInFlight) return
+    correctionFactorInFlight = true
+    try {
+        logoScaleCorrectionFactor.value = 1
 
-    // Iterated rather than solved in one shot, and reusing handleScroll()
-    // itself (called with scrollY still 0 here, at mount) rather than a
-    // simplified stand-in for it — an earlier version only replicated the
-    // scale/translateY formulas, not the navbar-clearance correction that
-    // handleScroll also applies, so its measurement didn't match what
-    // actually ends up on screen and undercorrected. Re-measuring against
-    // the real thing and correcting again converges empirically. Capped at
-    // a few rounds — each one should shrink the remaining overlap towards
-    // zero, not oscillate.
-    for (let attempt = 0; attempt < 4; attempt++) {
-        await handleScroll()
+        // Iterated rather than solved in one shot, and reusing handleScroll()
+        // itself (called with scrollY still 0 here, at mount) rather than a
+        // simplified stand-in for it — an earlier version only replicated the
+        // scale/translateY formulas, not the navbar-clearance correction that
+        // handleScroll also applies, so its measurement didn't match what
+        // actually ends up on screen and undercorrected. Re-measuring against
+        // the real thing and correcting again converges empirically. Capped at
+        // a few rounds — each one should shrink the remaining overlap towards
+        // zero, not oscillate.
+        for (let attempt = 0; attempt < 4; attempt++) {
+            await handleScroll()
 
-        if (!logoContainerRef.value || !heroTextRef.value) return
-        const logoRect = logoContainerRef.value.getBoundingClientRect()
-        const textTop = heroTextRef.value.getBoundingClientRect().top
-        const maxBottom = textTop - heroTextClearance
-        // The source logo image has ~12.5% transparent margin below the
-        // drawn crest (trimmed content is 468 of 640px tall) — the box's
-        // raw bottom edge isn't where the artwork visually ends, so using
-        // it directly overcorrects (shrinks logos that already had a
-        // visible gap, like desktop's, because of margin baked into the
-        // asset itself, not any real crowding).
-        const effectiveBottom = logoRect.bottom - logoRect.height * (80 / 640)
-        const overlap = effectiveBottom - maxBottom
-        if (logoRect.height <= 0 || overlap <= 0) break
+            if (!logoContainerRef.value || !heroTextRef.value) return
+            const logoRect = logoContainerRef.value.getBoundingClientRect()
+            const textTop = heroTextRef.value.getBoundingClientRect().top
+            const maxBottom = textTop - heroTextClearance
+            // The source logo image has ~12.5% transparent margin below the
+            // drawn crest (trimmed content is 468 of 640px tall) — the box's
+            // raw bottom edge isn't where the artwork visually ends, so using
+            // it directly overcorrects (shrinks logos that already had a
+            // visible gap, like desktop's, because of margin baked into the
+            // asset itself, not any real crowding).
+            const effectiveBottom = logoRect.bottom - logoRect.height * (80 / 640)
+            const overlap = effectiveBottom - maxBottom
+            if (logoRect.height <= 0 || overlap <= 0) break
 
-        // scale() shrinks symmetrically around the box's own center, so
-        // both edges move inward — the top drops by the same amount the
-        // bottom rises. Shrinking by (1 - 2*overlap/height), not
-        // (1 - overlap/height), is what actually lands the bottom edge
-        // exactly on maxBottom instead of leaving half the overlap.
-        const ratio = 1 - (2 * overlap) / logoRect.height
-        if (ratio <= 0) break
-        logoScaleCorrectionFactor.value *= ratio
+            // scale() shrinks symmetrically around the box's own center, so
+            // both edges move inward — the top drops by the same amount the
+            // bottom rises. Shrinking by (1 - 2*overlap/height), not
+            // (1 - overlap/height), is what actually lands the bottom edge
+            // exactly on maxBottom instead of leaving half the overlap.
+            const ratio = 1 - (2 * overlap) / logoRect.height
+            if (ratio <= 0) break
+            logoScaleCorrectionFactor.value *= ratio
+        }
+    } finally {
+        correctionFactorInFlight = false
     }
 }
 
@@ -253,15 +271,17 @@ const computeSchalOffsets = (): number[] => {
 const schalOffsets = ref(computeSchalOffsets())
 
 const handleScroll = async () => {
-    const scrollY = window.scrollY
-    const heroHeight = window.innerHeight
+    // Overscroll rubber-banding can briefly drive scrollY negative; floor it
+    // so progress below never goes negative.
+    const scrollY = Math.max(window.scrollY, 0)
+    const heroHeight = viewportHeight.value
     const progress = Math.min(scrollY / (heroHeight * 0.5), 1)
 
     // scale interpolation
     logoScale.value = (initialScale - (initialScale - finalScale) * progress) * logoScaleCorrectionFactor.value
 
     // translateY interpolation (center → top)
-    const centerY = window.innerHeight / 2 - logoBaseHeight / 2 - 160
+    const centerY = viewportHeight.value / 2 - logoBaseHeight / 2 - 160
     logoTranslateY.value = centerY + (finalTopOffset - centerY) * progress
 
     // schal scale: grows from 1.7 to 2.6 as you scroll
@@ -306,14 +326,22 @@ const onScroll = () => {
     })
 }
 
-// Viewport size changed (resize or orientation change) — the correction
-// factor depends on it, so recompute before the next handleScroll.
+// Only recompute the correction factor on a WIDTH change, not on every
+// resize — iOS Safari's toolbar hide/show also fires 'resize' but only
+// changes height, and re-measuring against it mid-animation is unreliable.
+let lastResizeWidth = window.innerWidth
 let resizeTicking = false
 const onResize = () => {
     if (resizeTicking) return
     resizeTicking = true
-    requestAnimationFrame(() => {
-        computeLogoScaleCorrectionFactor().then(handleScroll)
+    requestAnimationFrame(async () => {
+        viewportHeight.value = window.innerHeight
+        const widthChanged = window.innerWidth !== lastResizeWidth
+        lastResizeWidth = window.innerWidth
+        if (widthChanged) {
+            await computeLogoScaleCorrectionFactor()
+        }
+        await handleScroll()
         resizeTicking = false
     })
 }
