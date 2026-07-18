@@ -18,6 +18,11 @@
                 <img src="../assets/hbbc_logo.webp" alt="HBBC Logo" class="block w-[clamp(180px,30vw,300px)] h-auto" @load="onLogoLoad" />
             </div>
 
+            <!-- TEMPORARY diagnostic overlay for issue #12 — remove before merging.
+                 Four fixes in a row produced no observable change on a real iPad, so
+                 this reads out the actual live values instead of guessing further. -->
+            <div class="fixed top-0 right-0 z-50 bg-black/80 text-green-400 font-mono text-xs p-2 leading-tight pointer-events-none whitespace-pre">{{ debugText }}</div>
+
             <!-- VFB Schal Background (repeated, scrolls with page) -->
             <div v-for="offset in schalOffsets" :key="offset" class="absolute left-1/2 z-10 pointer-events-none" :style="{
                 top: `${offset}vh`,
@@ -185,6 +190,21 @@ const logoScale = ref(initialScale)
 const logoTranslateY = ref(window.innerHeight / 2 - logoBaseHeight / 2)
 const logoOpacity = ref(1)
 const schalScale = ref(1)
+
+// TEMPORARY diagnostic overlay for issue #12 — remove before merging.
+const debugText = ref('')
+const updateDebugText = () => {
+    const vv = window.visualViewport
+    debugText.value = [
+        `scrollY: ${window.scrollY.toFixed(1)}`,
+        `innerHeight: ${window.innerHeight}`,
+        `cached viewportHeight: ${viewportHeight.value}`,
+        `visualViewport.height: ${vv ? vv.height.toFixed(1) : 'n/a'}`,
+        `visualViewport.offsetTop: ${vv ? vv.offsetTop.toFixed(1) : 'n/a'}`,
+        `logoScale: ${logoScale.value.toFixed(3)}`,
+        `logoTranslateY: ${logoTranslateY.value.toFixed(1)}`,
+    ].join('\n')
+}
 const logoContainerRef = ref<HTMLElement | null>(null)
 const heroTextRef = ref<HTMLElement | null>(null)
 const heroTextClearance = 24 // minimum gap kept above the "Willkommen beim" heading
@@ -345,6 +365,16 @@ const onResize = () => {
     })
 }
 
+// TEMPORARY diagnostic overlay for issue #12 — remove before merging.
+// Runs its own rAF loop rather than piggybacking on onScroll/onResize so
+// it keeps reading live values even during a browser-chrome animation
+// that might not synchronously fire 'scroll'/'resize' for every frame.
+let debugRafId = 0
+const debugLoop = () => {
+    updateDebugText()
+    debugRafId = requestAnimationFrame(debugLoop)
+}
+
 onMounted(async () => {
     await computeLogoScaleCorrectionFactor()
     handleScroll() // initialize logo properly
@@ -352,11 +382,13 @@ onMounted(async () => {
     // Covers iOS Safari's collapsible toolbar changing window.innerHeight
     // with no 'scroll' event, and orientation changes on tablets/phones.
     window.addEventListener('resize', onResize)
+    debugRafId = requestAnimationFrame(debugLoop)
 })
 
 onUnmounted(() => {
     window.removeEventListener('scroll', onScroll)
     window.removeEventListener('resize', onResize)
+    cancelAnimationFrame(debugRafId)
 })
 
 // The very first computeLogoScaleCorrectionFactor()/handleScroll() calls
