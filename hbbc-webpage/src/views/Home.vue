@@ -4,12 +4,8 @@
         <div class="relative h-screen overflow-hidden">
 
             <!-- Logo -->
-            <!-- translateZ(0) + will-change: transform force this fixed element
-                 onto its own GPU compositor layer — a documented WebKit
-                 workaround for position:fixed elements flickering/mis-sizing
-                 while iOS/iPadOS Safari's own toolbar hide/show animation is
-                 in progress (not just during overscroll), independent of
-                 whatever scrollY-driven scale/position values are applied. -->
+            <!-- translateZ(0)/will-change force a GPU compositor layer — avoids
+                 WebKit position:fixed flicker during Safari's toolbar animation. -->
             <div ref="logoContainerRef" class="fixed left-1/2 z-40 pointer-events-none" :style="{
                 transform: `translate(-50%, ${logoTranslateY}px) scale(${logoScale}) translateZ(0)`,
                 willChange: 'transform',
@@ -190,16 +186,9 @@ const heroTextRef = ref<HTMLElement | null>(null)
 const heroTextClearance = 24 // minimum gap kept above the "Willkommen beim" heading
 const logoScaleCorrectionFactor = ref(1)
 
-// Cached rather than read live inside handleScroll(): iOS/iPadOS Safari's
-// collapsible toolbar animates window.innerHeight over the course of an
-// ordinary scroll gesture (not just overscroll), and handleScroll() fires
-// on every 'scroll' event — reading window.innerHeight fresh each time
-// made the progress ratio (and therefore the logo's scale/position) a
-// moving target against a denominator that was itself still changing,
-// which is what made the logo's size swing unpredictably with scroll
-// depth even after the overscroll bounce itself was fixed. Only updated
-// on resize (see onResize below), which already accounts for the
-// toolbar's height changes (see the listener comment in onMounted).
+// Cached instead of read live in handleScroll(): iOS Safari's toolbar
+// animates window.innerHeight mid-scroll, so a live read made it a moving
+// target. Only refreshed on resize (see onResize).
 const viewportHeight = ref(window.innerHeight)
 
 // Computed once — at rest (progress=0), the logo's largest and therefore
@@ -212,16 +201,9 @@ const viewportHeight = ref(window.innerHeight)
 // JS-driven formulas, that comparison was a moving target and could
 // transiently compute a near-zero ratio partway through the scroll,
 // flickering the logo's size before "popping" to its correct one.
-// Guards against concurrent invocations stomping on the shared
-// logoScaleCorrectionFactor ref below (each call resets it to 1, then
-// multiplies it down over several awaited frames) — onResize, onLogoLoad,
-// and the initial onMounted call can all trigger this, and iPad Safari's
-// toolbar hide/show can fire several 'resize' events in quick succession
-// while it animates and settles. Two overlapping calls racing on that
-// shared ref is what produced a logo size that was sometimes correct and
-// sometimes stuck at the uncorrected default (scale factor exactly 1),
-// regardless of scroll position — confirmed via two screenshots at
-// identical scrollY/innerHeight showing two different logoScale values.
+// Reentrancy guard: onMounted, onResize, and onLogoLoad can all call this,
+// and each call resets logoScaleCorrectionFactor before recomputing it —
+// overlapping calls would race on that shared ref.
 let correctionFactorInFlight = false
 const computeLogoScaleCorrectionFactor = async () => {
     if (correctionFactorInFlight) return
@@ -289,13 +271,8 @@ const computeSchalOffsets = (): number[] => {
 const schalOffsets = ref(computeSchalOffsets())
 
 const handleScroll = async () => {
-    // iOS/Android overscroll ("pull past the top" rubber-banding, used to
-    // trigger a reload) briefly drives window.scrollY negative — without a
-    // floor here, that fed a negative progress into the scale/position
-    // formulas below and overshot them, which is what made the logo's size
-    // visibly jump around while overscrolling on mobile/iPad. Desktop mice/
-    // trackwheels never produce a negative scrollY, so this floor is a
-    // no-op there.
+    // Overscroll rubber-banding can briefly drive scrollY negative; floor it
+    // so progress below never goes negative.
     const scrollY = Math.max(window.scrollY, 0)
     const heroHeight = viewportHeight.value
     const progress = Math.min(scrollY / (heroHeight * 0.5), 1)
@@ -349,30 +326,9 @@ const onScroll = () => {
     })
 }
 
-// Viewport size changed — recompute the correction factor only if WIDTH
-// changed (a real orientation change/window resize), not on every
-// 'resize' event. iOS/iPadOS Safari's toolbar hide/show also fires
-// 'resize' (to report the new, settled window.innerHeight — see
-// viewportHeight above) but only ever changes HEIGHT, never width. Round
-// 2 diagnostics (correctionFactor exposed directly, plus call/block/
-// complete counters) proved the reentrancy guard from the previous fix
-// was never even engaging — "blocked" stayed 0 through 12+ resize events
-// — yet correctionFactor still flip-flopped between the correct value and
-// the uncorrected default across separate, fully sequential (non-
-// overlapping) calls at an identical, already-settled innerHeight. That
-// rules out a concurrency race: each individual computeLogoScaleCorrection
-// Factor() run can independently land on a wrong measurement depending on
-// exactly when it executes relative to Safari's own toolbar-animation
-// layout pass — window.innerHeight already reports the new "settled"
-// value before the browser has necessarily finished re-laying-out the
-// page to match, so a getBoundingClientRect() read immediately after can
-// be stale even a frame or two after nextTick()/requestAnimationFrame.
-// Since the correction is fundamentally about horizontal layout margins
-// against a fixed-width logo, it never needed to depend on viewport
-// height at all — restricting recomputation to real width changes removes
-// the toolbar as a trigger for this measurement entirely, rather than
-// trying to make an inherently timing-fragile measurement more robust
-// against it.
+// Only recompute the correction factor on a WIDTH change, not on every
+// resize — iOS Safari's toolbar hide/show also fires 'resize' but only
+// changes height, and re-measuring against it mid-animation is unreliable.
 let lastResizeWidth = window.innerWidth
 let resizeTicking = false
 const onResize = () => {
