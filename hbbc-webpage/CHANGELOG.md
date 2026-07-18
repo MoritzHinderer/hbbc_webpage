@@ -110,7 +110,12 @@ appears to complete its layout synchronously in a way Safari's
 correction factor's own original design intent, predating any of these
 six fixes: a one-time, worst-case "resting state" value, never meant to
 reactively track a transient browser-chrome fluctuation. **Confirmed
-fixed on a real iPad** — debug overlay removed.
+fixed on a real iPad** — debug overlay removed. Since the actual root
+cause was the correction-factor recomputation, not the overscroll bounce
+itself, fix #2's `overscroll-behavior-y: none` (which disabled the
+browser's native rubber-band bounce site-wide) was no longer load-
+bearing and has been reverted at the user's request, restoring the
+native bounce.
 
 ## [0.6.0] - 2026-07-18
 
