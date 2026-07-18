@@ -18,6 +18,21 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-18
+
+Phase 2 of automated testing (further progress on #7, still not closed —
+Phase 3 continues with the remaining backend routes and the bulk of the
+frontend component tests). Backend test count: 45 → 114. Covers every
+public read-only route, every admin CRUD route (events, downloads, news,
+users, gallery, members — including real multipart file uploads via
+supertest), account-request approval, the analytics dashboard, and
+newsletter sending. Along the way, fixed several routes that hardcoded
+their content-file paths directly to server/content/ (or, for the
+downloads manifest, the git-tracked public/downloads/) — real risk that
+a CRUD test would read and write actual live site content — by
+introducing a shared, env-var-driven override (CONTENT_DIR/PUBLIC_DIR)
+that every content route now uses.
+
 ## [0.4.0] - 2026-07-17
 
 Phase 1 of automated testing + CI (progress on #7, not yet closed — see
