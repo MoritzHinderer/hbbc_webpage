@@ -2,10 +2,41 @@ import { DatabaseSync } from 'node:sqlite'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const dataDir = path.join(process.cwd(), 'server', 'data')
-fs.mkdirSync(dataDir, { recursive: true })
+// DB_PATH lets tests point this at an isolated database (also doubling
+// as "this is a test run" elsewhere, e.g. server/routes/auth.ts's rate
+// limiter) — unset in normal dev/production use, where it falls back to
+// the real on-disk path.
+const dbPath = process.env.DB_PATH
 
-export const db = new DatabaseSync(path.join(dataDir, 'app.db'))
+if (dbPath && dbPath !== ':memory:') {
+  // Guarantees a genuinely fresh database on every isolated test run,
+  // entirely within this one process's synchronous startup — not via a
+  // separate cleanup step (e.g. a Playwright globalSetup) run from a
+  // different process. That two-process approach was tried first and
+  // reproducibly raced with this server's own startup: globalSetup's
+  // unlink could fire after this module had already opened/written to
+  // the file, deleting it out from under the running connection and
+  // leaving SQLite refusing further writes ("attempt to write a
+  // readonly database") for the rest of the process's life. Doing the
+  // cleanup here instead makes it happen-before anything else touches
+  // the file, by construction.
+  for (const suffix of ['', '-journal', '-wal', '-shm']) {
+    try {
+      fs.unlinkSync(dbPath + suffix)
+    } catch {
+      // Nothing to delete — fine, that's the common case.
+    }
+  }
+}
+
+if (!dbPath) {
+  const dataDir = path.join(process.cwd(), 'server', 'data')
+  fs.mkdirSync(dataDir, { recursive: true })
+} else if (dbPath !== ':memory:') {
+  fs.mkdirSync(path.dirname(dbPath), { recursive: true })
+}
+
+export const db = new DatabaseSync(dbPath || path.join(process.cwd(), 'server', 'data', 'app.db'))
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (

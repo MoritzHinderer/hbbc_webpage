@@ -1,10 +1,10 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
-import type { WithId } from './content-store.js'
+import { contentDir, type WithId } from './content-store.js'
 import { extForImageMime } from './uploads.js'
 
-export const membersFile = path.join(process.cwd(), 'server', 'content', 'members.json')
-export const picturesDir = path.join(process.cwd(), 'server', 'content', 'member_pictures')
+export const membersFile = path.join(contentDir, 'members.json')
+export const picturesDir = path.join(contentDir, 'member_pictures')
 const PICTURE_EXTS = ['png', 'jpeg', 'jpg', 'webp']
 
 export interface Member extends WithId {

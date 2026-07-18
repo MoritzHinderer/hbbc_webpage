@@ -1,11 +1,11 @@
 import { Router } from 'express'
 import path from 'node:path'
-import { readCollection } from '../content-store.js'
+import { contentDir, readCollection } from '../content-store.js'
 import type { NewsArticle } from './admin-news.js'
 
 const router = Router()
-const newsFile = path.join(process.cwd(), 'server', 'content', 'news.json')
-const newsPhotosDir = path.join(process.cwd(), 'server', 'content', 'news-photos')
+const newsFile = path.join(contentDir, 'news.json')
+const newsPhotosDir = path.join(contentDir, 'news-photos')
 
 const isSafeFilename = (file: string): boolean => /^[\w.-]+$/.test(file)
 

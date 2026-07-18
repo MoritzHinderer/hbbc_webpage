@@ -1,7 +1,7 @@
 {
   "name": "hbbc-webpage",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,12 @@
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
     "start": "NODE_ENV=production tsx server/index.ts",
-    "create-admin": "tsx server/scripts/create-admin.ts"
+    "create-admin": "tsx server/scripts/create-admin.ts",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test:server": "vitest run --config vitest.server.config.ts",
+    "test": "npm run test:unit && npm run test:server",
+    "test:coverage": "npm run test:unit -- --coverage && npm run test:server -- --coverage",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
@@ -33,22 +38,29 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/leaflet": "^1.9.21",
     "@types/multer": "^2.2.0",
     "@types/node": "^24.10.1",
     "@types/nodemailer": "^8.0.1",
+    "@types/supertest": "^7.2.1",
     "@vitejs/plugin-vue": "^6.0.1",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.8.1",
     "autoprefixer": "^10.4.23",
     "concurrently": "^9.2.1",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.6",
     "sharp": "^0.35.3",
+    "supertest": "^7.2.2",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
+    "vitest": "^4.1.10",
     "vue-tsc": "^3.1.4"
   }
 }

@@ -1,6 +1,7 @@
 import multer from 'multer'
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
+import { contentDir } from './content-store.js'
 
 const MAX_IMAGE_SIZE = 8 * 1024 * 1024 // 8MB
 const MAX_PDF_SIZE = 20 * 1024 * 1024 // 20MB
@@ -40,19 +41,19 @@ function imageStorage(destDir: string) {
 }
 
 export const memberPictureUpload = multer({
-  storage: imageStorage(path.join(process.cwd(), 'server', 'content', 'member_pictures')),
+  storage: imageStorage(path.join(contentDir, 'member_pictures')),
   limits: { fileSize: MAX_IMAGE_SIZE },
   fileFilter: imageFileFilter,
 })
 
 export const galleryPhotoUpload = multer({
-  storage: imageStorage(path.join(process.cwd(), 'server', 'content', 'gallery-photos')),
+  storage: imageStorage(path.join(contentDir, 'gallery-photos')),
   limits: { fileSize: MAX_IMAGE_SIZE },
   fileFilter: imageFileFilter,
 })
 
 export const newsImageUpload = multer({
-  storage: imageStorage(path.join(process.cwd(), 'server', 'content', 'news-photos')),
+  storage: imageStorage(path.join(contentDir, 'news-photos')),
   limits: { fileSize: MAX_IMAGE_SIZE },
   fileFilter: imageFileFilter,
 })
@@ -62,7 +63,7 @@ export const downloadFileUpload = multer({
     // Not public/ — some downloads require login, so the file itself must
     // only be reachable through the gated GET /api/downloads/:file route,
     // not a direct static URL. See server/routes/downloads.ts.
-    destination: path.join(process.cwd(), 'server', 'content', 'downloads'),
+    destination: path.join(contentDir, 'downloads'),
     filename: (_req, _file, cb) => cb(null, `${randomUUID()}.pdf`),
   }),
   limits: { fileSize: MAX_PDF_SIZE },

@@ -18,6 +18,51 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-07-18
+
+Phase 3 of automated testing (further progress on #7, still not closed —
+frontend component tests remain, roughly 30 views/components with
+essentially no coverage yet). Every backend route now has real
+integration test coverage: contact, downloads (per-file auth gating),
+the member-only events/Fanclub-Termine list, gallery (approved-only
+filtering, uploads, albums), profile (member-card CRUD, newsletter
+toggle), and the OpenLigaDB-backed public vfb-matches schedule (fetch
+mocked, cache behavior and external-API resilience exercised
+deterministically via a faked Date). Backend test count: 114 -> 150.
+Also caught and fixed a real order-dependent flakiness bug: a new
+profile.test.ts left member cards behind in the shared test content
+directory with a fanclub_member_id that isn't guaranteed unique across
+test files, occasionally causing a false-positive conflict in an
+unrelated test — fixed by cleaning up each created card, same
+discipline already used in members.test.ts.
+
+## [0.5.0] - 2026-07-18
+
+Phase 2 of automated testing (further progress on #7, still not closed —
+Phase 3 continues with the remaining backend routes and the bulk of the
+frontend component tests). Backend test count: 45 → 114. Covers every
+public read-only route, every admin CRUD route (events, downloads, news,
+users, gallery, members — including real multipart file uploads via
+supertest), account-request approval, the analytics dashboard, and
+newsletter sending. Along the way, fixed several routes that hardcoded
+their content-file paths directly to server/content/ (or, for the
+downloads manifest, the git-tracked public/downloads/) — real risk that
+a CRUD test would read and write actual live site content — by
+introducing a shared, env-var-driven override (CONTENT_DIR/PUBLIC_DIR)
+that every content route now uses.
+
+## [0.4.0] - 2026-07-17
+
+Phase 1 of automated testing + CI (progress on #7, not yet closed — see
+the issue for the phased roadmap toward >90% coverage). Vitest for
+backend (45 tests: password/session/validation units, register/login/
+forgot-password and one representative admin-CRUD route as supertest
+integration tests) and frontend (8 component tests), plus a small
+Playwright e2e suite (6 tests) covering login, the full forgot-password
+flow, and navigation/404. New GitHub Actions CI pipeline runs all of it
+on every push and PR — coverage is reported, not a merge-blocking gate,
+since it's climbing from zero rather than already near the target.
+
 ## [0.3.0] - 2026-07-17
 
 Added a "CSV exportieren" button to the Fanclub-Mitglieder admin tab

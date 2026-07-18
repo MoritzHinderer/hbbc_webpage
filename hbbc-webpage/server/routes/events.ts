@@ -1,9 +1,10 @@
 import { Router } from 'express'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { contentDir } from '../content-store.js'
 
 const router = Router()
-const eventsFile = path.join(process.cwd(), 'server', 'content', 'events.json')
+const eventsFile = path.join(contentDir, 'events.json')
 
 router.get('/', async (_req, res) => {
   try {
