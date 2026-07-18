@@ -86,8 +86,32 @@ reproducible as a synthetic automated test even against the pre-fix
 code, since real Safari's event timing under an actual animated toolbar
 isn't fully replicable in a headless browser. Confidence here rests on
 the code-level proof (the synchronous guard-clear) and the user's own
-hard evidence, not an automated repro. Not yet confirmed fixed on a real
-iPad as of this entry.
+hard evidence, not an automated repro. Still not enough — user confirmed
+the fifth fix also didn't resolve it, so a temporary diagnostic overlay
+was re-added exposing `logoScaleCorrectionFactor` directly plus counters
+for how many times the correction computation starts/gets blocked by the
+reentrancy guard/completes. Four fresh screenshots showed the actual bug
+clearly for the first time: "correction calls blocked" stayed at `0`
+through 2, 4, 6, and 12 `resize` events — the reentrancy guard was never
+even engaging, meaning fix #5's race-condition diagnosis, while a real
+and valid fix in its own right, was not the (or not the only) actual
+cause. Yet `correctionFactor` still flip-flopped between the correct
+value and the uncorrected default across separate, fully sequential
+(non-overlapping, guard-confirmed) calls, at an identical, already-
+settled `innerHeight`. Sixth fix: only recompute the correction factor
+on a genuine viewport **width** change (a real orientation change/window
+resize), not on every `resize` — iPadOS Safari's toolbar hide/show only
+ever changes height, never width, so it no longer retriggers this
+measurement at all, sidestepping whatever exact WebKit-specific
+layout/paint timing was producing the bad reads (unreproducible even
+with genuine Playwright viewport resizes in headless Chromium, which
+appears to complete its layout synchronously in a way Safari's
+*animated* toolbar transition does not). This also matches the
+correction factor's own original design intent, predating any of these
+six fixes: a one-time, worst-case "resting state" value, never meant to
+reactively track a transient browser-chrome fluctuation. Not yet
+confirmed fixed on a real iPad as of this entry. Debug overlay
+intentionally still present pending that confirmation.
 
 ## [0.6.0] - 2026-07-18
 

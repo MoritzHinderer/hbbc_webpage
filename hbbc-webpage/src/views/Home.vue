@@ -383,22 +383,43 @@ const onScroll = () => {
     })
 }
 
-// Viewport size changed (resize or orientation change) — the correction
-// factor depends on it, so recompute before the next handleScroll.
+// Viewport size changed — recompute the correction factor only if WIDTH
+// changed (a real orientation change/window resize), not on every
+// 'resize' event. iOS/iPadOS Safari's toolbar hide/show also fires
+// 'resize' (to report the new, settled window.innerHeight — see
+// viewportHeight above) but only ever changes HEIGHT, never width. Round
+// 2 diagnostics (correctionFactor exposed directly, plus call/block/
+// complete counters) proved the reentrancy guard from the previous fix
+// was never even engaging — "blocked" stayed 0 through 12+ resize events
+// — yet correctionFactor still flip-flopped between the correct value and
+// the uncorrected default across separate, fully sequential (non-
+// overlapping) calls at an identical, already-settled innerHeight. That
+// rules out a concurrency race: each individual computeLogoScaleCorrection
+// Factor() run can independently land on a wrong measurement depending on
+// exactly when it executes relative to Safari's own toolbar-animation
+// layout pass — window.innerHeight already reports the new "settled"
+// value before the browser has necessarily finished re-laying-out the
+// page to match, so a getBoundingClientRect() read immediately after can
+// be stale even a frame or two after nextTick()/requestAnimationFrame.
+// Since the correction is fundamentally about horizontal layout margins
+// against a fixed-width logo, it never needed to depend on viewport
+// height at all — restricting recomputation to real width changes removes
+// the toolbar as a trigger for this measurement entirely, rather than
+// trying to make an inherently timing-fragile measurement more robust
+// against it.
+let lastResizeWidth = window.innerWidth
 let resizeTicking = false
 const onResize = () => {
     debugResizeEvents.value++ // TEMPORARY diagnostic — remove before merging.
     if (resizeTicking) return
     resizeTicking = true
     requestAnimationFrame(async () => {
-        // Awaits the full chain (see computeLogoScaleCorrectionFactor's own
-        // reentrancy guard for why) rather than clearing resizeTicking
-        // synchronously right after merely starting it, so a second
-        // 'resize' event while this is still in flight — plausible during
-        // iPad/iPhone Safari's toolbar hide/show animation — doesn't
-        // schedule a redundant overlapping run.
         viewportHeight.value = window.innerHeight
-        await computeLogoScaleCorrectionFactor()
+        const widthChanged = window.innerWidth !== lastResizeWidth
+        lastResizeWidth = window.innerWidth
+        if (widthChanged) {
+            await computeLogoScaleCorrectionFactor()
+        }
         await handleScroll()
         resizeTicking = false
     })
