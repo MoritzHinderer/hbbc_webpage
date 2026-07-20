@@ -8,7 +8,7 @@
       <div class="text-3xl md:text-4xl font-bold text-red-500">
         <AnimatedCounter :target="stat.value" :suffix="stat.suffix" />
       </div>
-      <p class="text-gray-300 text-sm mt-2">{{ stat.label }}</p>
+      <p class="text-gray-300 text-sm mt-2 break-words">{{ stat.label }}</p>
     </div>
   </section>
 </template>
@@ -24,7 +24,7 @@ const memberCount = ref(FOUNDING_MEMBER_COUNT)
 
 const stats = computed(() => [
   { label: 'Mitglieder', value: memberCount.value, suffix: '' },
-  { label: 'Gründungsmitglieder', value: FOUNDING_MEMBER_COUNT, suffix: '' },
+  { label: 'Gründungs­mitglieder', value: FOUNDING_MEMBER_COUNT, suffix: '' }, // ­: soft hyphen, only visible if the line actually breaks there
   { label: 'Gegründet', value: FOUNDING_YEAR, suffix: '' },
   { label: 'Jahre Leidenschaft', value: new Date().getFullYear() - FOUNDING_YEAR || 1, suffix: '+' },
 ])
