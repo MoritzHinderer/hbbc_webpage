@@ -18,6 +18,14 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-07-20
+
+Fixed the "Gründungsmitglieder" stat tile's label overflowing past the
+tile border on mobile (closes #16) — a long, unbreakable German compound
+word in a narrow two-column mobile grid. Added a soft hyphen so it wraps
+as "Gründungs-/mitglieder" only if it needs to, plus `break-words` as a
+general safety net for the other stat labels.
+
 ## [0.6.1] - 2026-07-18
 
 Fixed the home page hero logo's size and position changing
