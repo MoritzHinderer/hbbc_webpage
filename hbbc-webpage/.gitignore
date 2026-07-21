@@ -28,6 +28,13 @@ server/data/
 # conflict with live admin-entered content.
 server/content/
 
+# Same reasoning as server/content/ above — this is the one piece of
+# admin-editable content that lives under public/ instead (see
+# content-store.ts's publicDir). Leaving it tracked let a fresh/reset VPS
+# checkout ship a manifest referencing downloads that were never actually
+# uploaded to that checkout's disk (issue #18).
+public/downloads/downloads.json
+
 # Personal working notes, not project docs
 TODO.md
 
