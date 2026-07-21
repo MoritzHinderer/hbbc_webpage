@@ -122,6 +122,18 @@ safe regardless of whether any individual file had been modified or not
 untracked files — verified empirically before writing this). New
 deploys after this one-time step are back to just `02-deploy.sh`.
 
+`public/downloads/downloads.json` (the downloads manifest) was missed by
+that migration and stayed git-tracked — the same risk applied to just
+this one file, and is what caused issue #18 (a fresh/reset checkout's
+manifest referenced downloads that were never actually uploaded to that
+checkout's disk). If you deployed before this second fix, run this
+**once**, the same way:
+
+```bash
+bash ~/hbbc_webpage/hbbc-webpage/deploy/05-migrate-downloads-json-tracking.sh
+bash ~/hbbc_webpage/hbbc-webpage/deploy/02-deploy.sh
+```
+
 ## Shipping future updates
 
 From then on, every update is just:

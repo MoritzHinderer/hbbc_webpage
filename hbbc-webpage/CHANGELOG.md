@@ -18,6 +18,35 @@ The VPS picks up the new tag automatically within the hour (or run
 
 ## [Unreleased]
 
+## [0.6.3] - 2026-07-21
+
+Fixed downloads not working on the deployed site — "Document is not
+available" for every entry (closes #18). Root cause: `server/content/`
+(uploaded files) was correctly untracked from git in an earlier fix, but
+`public/downloads/downloads.json` (the manifest listing them) was missed
+and stayed git-tracked. A checkout whose disk never actually received
+the three original PDFs (they were only ever local to one developer's
+machine, since the untracking fix only preserves files already present
+at migration time) still shipped a manifest confidently listing them —
+every download 404'd since the referenced files never existed on that
+checkout. Fixed by untracking `public/downloads/downloads.json` too,
+matching every other admin-editable content file's pattern. Requires a
+one-time migration step on next deploy (see `deploy/README.md`) since a
+plain `git pull` can't safely untrack a file that's since diverged from
+its tracked version (an admin uploading/editing downloads through the
+live site) without either aborting the deploy or silently deleting it.
+
+Also found and fixed a second, more fundamental bug behind the same
+report: the public Downloads page fetched `/downloads/downloads.json`
+as a static build-time asset (baked into `dist/` once at build time),
+never a live API call — the only content type still doing this, unlike
+events/news/gallery. Any admin change (upload, edit, delete) correctly
+updated the real file on disk but never reached actual visitors until
+the next full rebuild and deploy. Added a real `GET /api/downloads` list
+route and pointed the frontend at it instead — confirmed end-to-end via
+a real browser session that uploading and deleting a download now shows
+up on the live page immediately, no rebuild required.
+
 ## [0.6.2] - 2026-07-20
 
 Fixed the "Gründungsmitglieder" stat tile's label overflowing past the
