@@ -9,6 +9,14 @@ const downloadsDir = path.join(contentDir, 'downloads')
 
 const isSafeFilename = (file: string) => /^[\w.-]+$/.test(file)
 
+// Lists every download, including requiresAuth ones — the frontend gates
+// visibility/access per-entry (lock icon vs. direct link), so this needs
+// to return the full list, not just the publicly-downloadable ones.
+router.get('/', async (_req, res) => {
+  const downloads = await readCollection<Download>(downloadsFile, 'downloads')
+  res.json({ downloads })
+})
+
 // Public route, but gating is per-file (not blanket requireAuth) — each
 // download's `requiresAuth` flag, set by the admin, decides whether
 // req.user (populated by the global attachUser middleware, if any) is

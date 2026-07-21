@@ -54,7 +54,7 @@ const isLocked = (file: Download) => file.requiresAuth && !currentUser.value
 
 onMounted(async () => {
   try {
-    const response = await fetch('/downloads/downloads.json')
+    const response = await fetch('/api/downloads')
     const data: { downloads: Download[] } = await response.json()
     downloads.value = data.downloads || []
   } catch (error) {

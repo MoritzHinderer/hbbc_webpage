@@ -29,6 +29,20 @@ async function uploadDownload(cookie: string, requiresAuth: boolean, filename: s
   return href.replace(/^\/api\/downloads\//, '')
 }
 
+describe('GET /api/downloads', () => {
+  it('lists downloads, including requiresAuth ones, unauthenticated', async () => {
+    const cookie = await createApprovedAdmin()
+    await uploadDownload(cookie, false, 'list-public.pdf')
+    await uploadDownload(cookie, true, 'list-gated.pdf')
+
+    const res = await request(app).get('/api/downloads')
+    expect(res.status).toBe(200)
+    const names = res.body.downloads.map((d: { name: string }) => d.name)
+    expect(names).toContain('list-public.pdf')
+    expect(names).toContain('list-gated.pdf')
+  })
+})
+
 describe('GET /api/downloads/:file', () => {
   it('rejects a filename containing unsafe characters', async () => {
     const res = await request(app).get('/api/downloads/foo;bar.pdf')
